@@ -1,7 +1,7 @@
  Contribution Rules
 
  1) Branch Strategy
-- يممنوع مباشرة على `main`
+- ممنوع الشغل مباشرة على `main`
 - الشغل على `dev` أو على فروع `feature/*`
 - لكل مهمة فرع ونسميها باسم واضح 
  2) Commit Rules
