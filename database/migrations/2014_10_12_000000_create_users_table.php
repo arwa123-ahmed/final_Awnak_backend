@@ -15,8 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->enum('role', ['customer', 'volunteer'])->nullable();
+            $table->string('nationality')->nullable();
+            $table->string('country');
+            $table->string('city');     
+            $table->string('street');
+            $table->string('phone');
             $table->string('password');
+            $table->decimal('earnedBalance', 10, 2)->default(0);
+            $table->decimal('balance', 10, 2)->default(0);
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
