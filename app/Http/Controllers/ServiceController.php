@@ -44,6 +44,7 @@ class ServiceController extends Controller
             'type' => 'required|in:offer,request',
             'mode' => 'required|in:online,offline',
             'minutes' => 'required|integer|min:1',
+            'timesalary'=>'required|integer'
         ]);
         $service = Service::create([
             'name' => $request->name,
@@ -52,6 +53,7 @@ class ServiceController extends Controller
             'type' => $request->type,
             'mode' => $request->mode,
             'status' => 'pending', 
+            'timesalary' => $request->timesalary,
             'expires_at' => now()->addMinutes($request->minutes),
 
         ]);
@@ -72,7 +74,8 @@ class ServiceController extends Controller
             'category_id' => 'required|exists:categories,id',
             'type' => 'required|in:offer,request',
             'mode' => 'required|in:online,offline',
-            'status' => 'required|in:pending,approved,completed,deleted',
+           
+            'timesalary'=>'required|integer'
         ]);
         $service->update($request->all());
         return response()->json([

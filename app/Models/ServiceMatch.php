@@ -12,6 +12,9 @@ class ServiceMatch extends Model
         'customer_id',
         'service_id',
         'status',
+        'delay_minutes',
+        'delay_reason',
+        'delay_status'
     ];
 
     public function volunteer()
@@ -28,4 +31,9 @@ class ServiceMatch extends Model
     {
         return $this->belongsTo(Service::class);
     }
+    
+    public function ratings() {
+    return $this->hasMany(Rating::class);
+}
+
 }

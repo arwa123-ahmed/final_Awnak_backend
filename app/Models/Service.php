@@ -14,7 +14,13 @@ class Service extends Model
         'type',
         'mode',
         'status',
-        'expires_at'
+        'timesalary',
+        'expires_at',
+        'end_time'
+    ];
+    protected $casts = [
+        'end_time' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     public function user()
@@ -31,4 +37,5 @@ class Service extends Model
     {
         return $this->hasMany(ServiceMatch::class);
     }
+    
 }

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedBigInteger('service_id');
             $table->foreign('service_id')->references('id')->on('services')->onDelete('cascade');
-            $table->enum('status', ['completed', 'pending', 'deleted']);
+            $table->string('status');
 
             $table->timestamps();
         });

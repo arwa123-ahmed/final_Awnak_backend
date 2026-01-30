@@ -11,18 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('services', function (Blueprint $table) {
+        Schema::create('recharge_balances', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->unsignedBigInteger('category_id');
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
-            $table->enum('type', ['offer', 'request']);
-            $table->enum('mode', ['online', 'offline']);
-            $table->string('status');
-            $table->decimal('timesalary')->default(0);
-            $table->timestamp('expires_at');
+            $table->string('image'); 
             $table->timestamps();
         });
     }
@@ -32,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('services');
+        Schema::dropIfExists('recharge_balances');
     }
 };
