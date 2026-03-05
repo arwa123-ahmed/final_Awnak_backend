@@ -30,7 +30,10 @@ class User extends Authenticatable
         'earnedBalance',
         'balance',
         'average_rating',
-        'ratings_count'
+        'ratings_count',
+        'gender',
+        'id_image',
+        'national_id'
         
     ];
     public function services()

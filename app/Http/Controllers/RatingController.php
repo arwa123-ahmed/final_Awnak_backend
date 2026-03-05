@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 class RatingController extends Controller
 {
+    
 public function store(Request $request, $servicematch_id)
 {
     DB::beginTransaction();
@@ -60,5 +61,6 @@ public function store(Request $request, $servicematch_id)
         return response()->json(['error' => $e->getMessage()], 500);
         }
 }
+
 }
  

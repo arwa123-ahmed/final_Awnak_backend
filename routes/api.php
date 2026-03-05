@@ -11,6 +11,7 @@ use App\Http\Controllers\ServiceMatchController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RechargeBalanceController;
+use Illuminate\Support\Facades\Mail;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -21,18 +22,38 @@ use App\Http\Controllers\RechargeBalanceController;
 | be assigned to the "api" middle ware group. Make something great!
 |
 */
+Route::get('/test', function () {
+    return response()->json(['message' => 'API works']);
+});
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-    // تسجيل اليوزر
+    //define routes for registeration -->> data not send to backend until verify otp
+    Route::post('/send-otp', [RegisterController::class, 'sendOtp']);
+    Route::post('/verify-otp', [RegisterController::class, 'verifyOtp']);
     Route::post('/register', [RegisterController::class, 'register']);
     Route::post('/login', [RegisterController::class, 'login']);
+    Route::post('/check-email', [RegisterController::class, 'checkEmail']);
+    //for forgetting password
+    Route::post('/forget-password', [RegisterController::class, 'forgetPassword']);
+    Route::post('/reset-password', [RegisterController::class, 'resetPassword']);
+ 
+
+    // تسجيل اليوزر
+   // Route::post('/register', [RegisterController::class, 'register']);
+   // Route::post('/login', [RegisterController::class, 'login']);
     Route::post('/logout', [RegisterController::class,'logout'])->middleware("auth:sanctum");
     Route::put('/profile', [RegisterController::class,'update'])->middleware("auth:sanctum");
 
     Route::middleware('auth:sanctum')->group(function () {
+    //تبعات عمار 
+    Route::post('/update/role', [RegisterController::class, 'updateRole']);
+    Route::post('/update/user', [RegisterController::class, 'updateUser']);
+
+
+
     // نعرض نضيف نعدل نحذف خدمه
     Route::get('/services', [ServiceController::class, 'index']);       
     Route::get('/services/{id}', [ServiceController::class, 'show']);   
