@@ -136,48 +136,47 @@ public function update(Request $request)
         ]);
     }
 
-    // REGISTERATION
+     // REGISTERATION
     public function register(Request $request)
     {
         $request->validate([
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users',
-        'role' => 'required|in:customer,volunteer',
-        'nationality' => 'required|string',
-        'country' => 'required|string',
-        'city' => 'required|string',
-        'street' => 'required|string',
-        'phone' => 'required|string',
-        'password' => 'required|min:6',
-        'gender' => 'required|in:male,female',
-        'id_image' => 'nullable|file'
+            'name' => 'required|string',
+            'id_image' => 'nullable|file',
+            'nationality' => 'required|string',
+            'city' => 'required|string',
+            'street' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'phone' => 'required|unique:users,phone',
+            'gender' => 'required|in:male,female'
         ]);
+
         // check about email status
-       if (!Cache::get('verified_' . $request->email)) {
-           return response()->json(['message' => 'Email not verified'], 422);
+        if (!Cache::get('verified_' . $request->email)) {
+            return response()->json(['message' => 'Email not verified'], 422);
         }
         //default img if img not exist
         $path = 'ids/user.png';
-       if ($request->hasFile('id_image')) {
-            //uplod card id image
-           $path = $request->file('id_image')->store('ids', 'public');
+
+        if ($request->hasFile('id_image')) {
+            // uplod card id image
+            $path = $request->file('id_image')->store('ids', 'public');
         }
         // create user
         $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'role' => $request->role,
-        'nationality' => $request->nationality,
-        'country' => $request->country,
-        'city' => $request->city,
-        'street' => $request->street,
-        'phone' => $request->phone, 
-        'password' => Hash::make($request->password),
-        'gender' => $request->gender,
-        'id_image' => $path
+            'name' => $request->name,
+            'id_image' => $path,
+            'nationality' => $request->nationality,
+            'city' => $request->city,
+            'street' => $request->street,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'phone' => $request->phone,
+            'gender' => $request->gender
         ]);
+
         // delete otp
-       Cache::forget('otp_' . $request->email);
+        Cache::forget('otp_' . $request->email);
         Cache::forget('verified_' . $request->email);
 
         return response()->json([
@@ -185,7 +184,6 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
-
     //check email
     public function checkEmail(Request $request)
     {
