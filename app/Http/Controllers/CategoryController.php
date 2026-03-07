@@ -13,11 +13,13 @@ class CategoryController extends Controller
     public function storeCategory(Request $request)
     {
         $request->validate([
-            'en-name' => 'required|string|max:255',
-            'ar-name' => 'required|string|max:255',
+            'en_name' => 'required|string|max:255',
+            'ar_name' => 'required|string|max:255',
             'mode' => 'required|in:online,offline',
-            'description' => 'required|string|max:255',
+            'en_description' => 'required|string|max:255',
+            'ar_description' => 'required|string|max:255'
         ]);
+        
 
         $input = $request->all();
 
@@ -33,10 +35,11 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
         $request->validate([
-            'en-name' => 'required|string|max:255',
-            'ar-name' => 'required|string|max:255',
+            'en_name' => 'required|string|max:255',
+            'ar_name' => 'required|string|max:255',
             'mode' => 'required|in:online,offline',
-            'description' => 'required|string|max:255',
+            'en_description' => 'required|string|max:255',
+            'ar_description' => 'required|string|max:255'
         ]);
 
         $updatedCategory = $request->all();

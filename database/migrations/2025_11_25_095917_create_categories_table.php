@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('en-name');
-            $table->string('ar-name');
+            $table->string('en_name');
+            $table->string('ar_name');
             $table->enum('mode', ['online', 'offline']);
-            $table->string('en-description');
-            $table->string('ar-description');
+$table->string('en_description');
+$table->string('ar_description');
             $table->timestamps();
         });
     }

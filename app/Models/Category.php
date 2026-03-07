@@ -9,11 +9,11 @@ class Category extends Model
 {
     protected $fillable = [
         
-        'en-name',
-        'ar-name',
+        'en_name',
+        'ar_name',
         'mode',
-        'en-description',
-        'ar-description'
+        'en_description',
+        'ar_description'
     ];
 
     public function services()
