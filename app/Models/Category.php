@@ -12,7 +12,8 @@ class Category extends Model
         'en-name',
         'ar-name',
         'mode',
-        'description',
+        'en-description',
+        'ar-description'
     ];
 
     public function services()
