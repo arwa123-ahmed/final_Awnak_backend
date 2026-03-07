@@ -24,7 +24,7 @@ class RegisterController extends Controller
         'password' => 'required|min:6',
         'role' => 'required|in:customer,volunteer',
         'nationality' => 'required|string',
-        'country' => 'required|string',
+        'country' => 'nullable|string',
         'city' => 'required|string',
         'street' => 'required|string',
         'phone' => 'required|string'
@@ -104,7 +104,7 @@ public function update(Request $request)
 */
 
 
-    public function sendOtp(Request $request)
+   public function sendOtp(Request $request)
     {
         $request->validate([
             'email' => 'required|email'
@@ -136,11 +136,12 @@ public function update(Request $request)
         ]);
     }
 
-     // REGISTERATION
+      // REGISTERATION
     public function register(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
+            'gender' => 'required|in:male,female',
             'id_image' => 'nullable|file',
             'nationality' => 'required|string',
             'city' => 'required|string',
@@ -148,7 +149,7 @@ public function update(Request $request)
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone' => 'required|unique:users,phone',
-            'gender' => 'required|in:male,female'
+            
         ]);
 
         // check about email status
@@ -165,6 +166,7 @@ public function update(Request $request)
         // create user
         $user = User::create([
             'name' => $request->name,
+            'gender' => $request->gender,
             'id_image' => $path,
             'nationality' => $request->nationality,
             'city' => $request->city,
@@ -172,7 +174,7 @@ public function update(Request $request)
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'gender' => $request->gender
+            
         ]);
 
         // delete otp
@@ -184,7 +186,8 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
-    //check email
+    
+     //check email
     public function checkEmail(Request $request)
     {
         $request->validate([
@@ -221,7 +224,7 @@ public function update(Request $request)
     //     return response()->json(["msg" => "mail confirmed to reset password"]);
     // }
 
-    public function forgetPassword(Request $request)
+public function forgetPassword(Request $request)
     {
         // dd(config('app.frontend_url'));
         $request->validate([
@@ -302,35 +305,57 @@ public function update(Request $request)
     //     return response()->json(["msg" => "updated user successfully"]);
     // }
 
-   public function updateUser(Request $request)
-    {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['msg' => 'Unauthorized'], 401);
-        }
-        $data = $request->validate([
-            'nationality' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'street' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'id_image' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
-            'national_id' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
-        ]);
-        if ($request->hasFile('id_image')) {
-            $data['id_image'] = $request->file('id_image')->store('ids', 'public');
-        }
-        if ($request->hasFile('national_id')) {
-            $data['national_id'] = $request->file('national_id')->store('ids', 'public');
-        }
-        
-        $user->update($data);
-        return response()->json([
-            'msg' => 'User updated successfully',
-            'user' => $user
-        ], 200);
+public function updateUser(Request $request)
+{
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['msg' => 'Unauthorized'], 401);
     }
 
-    //edit user role
+  $data = $request->validate([
+    'name'              => 'nullable|string|max:255',
+    'age'               => 'nullable|integer',
+    'email'             => 'nullable|email|max:255',
+    'phone'             => 'nullable|string|max:20',
+    'nationality'       => 'nullable|string|max:255',
+    'city'              => 'nullable|string|max:255',
+    'area'              => 'nullable|string|max:255',
+    'gps'               => 'nullable|string|max:255',
+    'national_id'       => 'nullable|string|max:255',
+    'national_id_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
+    'passport_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+    'id_image'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
+]);
+
+if ($request->hasFile('id_image')) {
+    $data['id_image'] = $request->file('id_image')->store('default-user', 'public');
+}
+
+if ($request->hasFile('national_id_image')) {
+    $data['national_id_image'] = $request->file('national_id_image')->store('default-user', 'public');
+}
+
+if ($request->hasFile('passport_image')) {
+    $data['passport_image'] = $request->file('passport_image')->store('default-user', 'public');
+}
+
+if (isset($data['area'])) {
+    $data['street'] = $data['area'];
+    unset($data['area']);
+}
+
+$filtered = array_filter($data, fn($value) => !is_null($value));
+$user->update($data);
+// $user->update($filtered);
+
+return response()->json([
+    'msg'  => 'User updated successfully',
+    'user' => $user->fresh()
+], 200);
+}
+
+   
+   //edit user role
     public function updateRole(Request $request)
     {
         $data = $request->validate([
@@ -350,3 +375,4 @@ public function update(Request $request)
     }
   
 }
+

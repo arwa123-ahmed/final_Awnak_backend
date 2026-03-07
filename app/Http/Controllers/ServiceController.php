@@ -57,6 +57,7 @@ class ServiceController extends Controller
             'expires_at' => now()->addMinutes($request->minutes),
 
         ]);
+        // role تحديد 
         return response()->json([
             'message' => 'Service created successfully, pending admin approval',
             'service' => $service
@@ -96,62 +97,29 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function showServicesMode(Request $request) 
+    public function showOffers(Request $request , $id)
     {
-      $user = $request->user(); // get the logged in user information
-      $modeFilter = $request->input('mode');
-      if ($user->role === 'customer' && $modeFilter=='offline') {
-       $services = Service::where('type', 'offer')
-                   ->where('mode', 'offline')
-                   ->where('user_id', '!=', $user->id)
-                   ->get();
-      } 
-      elseif ($user->role === 'volunteer' && $modeFilter=='offline') {
-        $services = Service::where('type', 'request')
-                   ->where('mode', 'offline')
-                   ->where('user_id', '!=', $user->id)
-                   ->get();
-      }
-       elseif ($user->role === 'customer' && $modeFilter=='online') {
-        $services = Service::where('type', 'offer')
-                   ->where('mode', 'online')
-                   ->where('user_id', '!=', $user->id)
-                   ->get();
-      } elseif ($user->role === 'volunteer' && $modeFilter=='online') {
-        $services = Service::where('type', 'request')
-                   ->where('mode', 'online')
-                   ->where('user_id', '!=', $user->id)
-                   ->get();
-       }
-      return response()->json([
-        'message' => 'Services retrieved successfully',
-        'services' => $services
-     ]);
+          $user = $request->user(); 
+          $offers = Service::where('type', 'offer')
+                               ->where('category_id', $id)
+                        ->get();
+             return response()->json([
+               'message' => 'Requests retrieved successfully',
+               'offers' => $offers
+           ]);
     }
 
-    public function showOffers(Request $request)
+    public function showRequests(Request $request , $id)
     {
-
-        $offers = Service::where('type', 'offer')->get();
-     
+        $user = $request->user(); 
+        $requests = Service::where('type', 'request')
+                                  ->where('category_id', $id)
+                             ->get();
            return response()->json([
-             'message' => 'Offers retrieved successfully',
-             'Offers' => $offers
+             'message' => 'Requests retrieved successfully',
+             'Requests' => $requests
          ]);
     }
-
-    public function showRequests(Request $request)
-    {
-
-       $requests = Service::where('type', 'request')->get();
-
-        return response()->json([
-        'message' => 'Requests retrieved successfully',
-        'Requests' => $requests
-       ]);
-    }
-
-
 
 }
 

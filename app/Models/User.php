@@ -22,7 +22,6 @@ class User extends Authenticatable
         'email',
         'role',
         'nationality',
-        'country',
         'city',
         'street',
         'phone',
@@ -33,7 +32,9 @@ class User extends Authenticatable
         'ratings_count',
         'gender',
         'id_image',
-        'national_id'
+        'national_id',
+        'passport_image',
+        'national_id_image',
         
     ];
     public function services()

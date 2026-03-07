@@ -14,15 +14,16 @@ return new class extends Migration
         Schema::create('services', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('description');
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unsignedBigInteger('category_id');
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
             $table->enum('type', ['offer', 'request']);
-            $table->enum('mode', ['online', 'offline']);
             $table->string('status');
-            $table->decimal('timesalary')->default(0);
-            $table->timestamp('expires_at');
+            $table->decimal('timesalary', 8, 2)->default(0);
+            $table->timestamp('end_time')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }

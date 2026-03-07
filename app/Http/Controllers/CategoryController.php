@@ -13,7 +13,9 @@ class CategoryController extends Controller
     public function storeCategory(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'en-name' => 'required|string|max:255',
+            'ar-name' => 'required|string|max:255',
+            'mode' => 'required|in:online,offline',
             'description' => 'required|string|max:255',
         ]);
 
@@ -31,7 +33,9 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
         $request->validate([
-            'name' => 'required|string|max:255',
+            'en-name' => 'required|string|max:255',
+            'ar-name' => 'required|string|max:255',
+            'mode' => 'required|in:online,offline',
             'description' => 'required|string|max:255',
         ]);
 
@@ -61,4 +65,19 @@ class CategoryController extends Controller
       ]);
     }
     
-}
+    public function showCategory(Request $request)
+    {
+        if ($request->mode == 'offline') {
+        $category = Category::where('mode', 'offline')->get();
+        } 
+        elseif ($request->mode == 'online') {
+        $category = Category::where('mode', 'online')->get();
+        }
+        return response()->json([
+            'message' => 'category retrieved successfully',
+            'categories' => $category
+        ]);
+
+    }
+
+    }

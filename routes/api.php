@@ -65,7 +65,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     Route::post('/storeCategory', [CategoryController::class, 'storeCategory']);
     Route::PUT('/editCategory/{id}', [CategoryController::class, 'editCategory']);
     Route::DELETE('/deleteCategory/{id}', [CategoryController::class, 'deleteCategory']);
-
+    Route::get('/showCategory', [CategoryController::class, 'showCategory']);
     // طلب خدمة
     Route::post('/services/{service}/request', [ServiceMatchController::class, 'store']);
     //  عرض طلبات الفولنتير 
@@ -89,8 +89,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
    Route::post('/recharge-balance', [RechargeBalanceController::class, 'store']);
    Route::post('/moneyTransfer/{id}', [ServiceMatchController::class, 'moneyTransfer']);
+   //عرض الطلبات والعروض والكاتيجوري مع تسجيل  
+    Route::get('showOffers/{id}', [ServiceController::class, 'showOffers']); 
+    Route::get('showRequests/{id}', [ServiceController::class, 'showRequests']);
+
    });
-//عرض الطلبات والعروض والكاتيجوري بدون تسجيل 
-    Route::get('/showOffers', [ServiceController::class, 'showOffers']); 
-    Route::get('/showRequests', [ServiceController::class, 'showRequests']);
+   
     Route::get('/categories', [CategoryController::class, 'index']);
+   
