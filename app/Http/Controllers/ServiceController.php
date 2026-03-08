@@ -18,48 +18,42 @@ class ServiceController extends Controller
         return response()->json($service);
     }
 
-    public function show_type(Request $request)
-    {    
-        $user = $request->user(); 
-        if ($user->role === 'customer') {
-        $services = Service::where('type', 'offer')->
-         where('user_id', '!=', $user->id)->get();
-       } 
-       elseif ($user->role === 'volunteer') {
-       $services = Service::where('type', 'request')->where('user_id', '!=', $user->id)->get();
-       }
-      return response()->json([
-        'message' => 'Services retrieved successfully',
-        'services' => $services
-      
-     ]); 
-
-    } 
-
+    // يعمل سيرفس
     public function create(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
+            'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'type' => 'required|in:offer,request',
-            'mode' => 'required|in:online,offline',
-            'minutes' => 'required|integer|min:1',
+            //في لوكيشن لسا
             'timesalary'=>'required|integer'
         ]);
-        $service = Service::create([
-            'name' => $request->name,
-            'user_id' => $request->user()->id,
-            'category_id' => $request->category_id,
-            'type' => $request->type,
-            'mode' => $request->mode,
-            'status' => 'pending', 
-            'timesalary' => $request->timesalary,
-            'expires_at' => now()->addMinutes($request->minutes),
+          $user = $request->user();
+        if ($user->role == 'customer' && $request->type == 'offer')
+             {
+             return response()->json([
+            'message' => 'Customer can only create requests'], 403);
+             }
 
-        ]);
-        // role تحديد 
+        if ($user->role == 'volunteer' && $request->type == 'request')
+        {
         return response()->json([
-            'message' => 'Service created successfully, pending admin approval',
+        'message' => 'Volunteer can only create offers'], 403);
+        }
+        $service = Service::create([
+        'name' => $request->name,
+        'description' => $request->description,
+        'user_id' => $user->id,
+        'category_id' => $request->category_id,
+        'type' => $request->type,
+        'status' => 'pending',
+        'timesalary' => $request->timesalary,
+        //في لوكيشن لسا
+        ]);
+       
+        return response()->json([
+            'message' => 'Service created successfully',
             'service' => $service
         ]);
     }
@@ -70,14 +64,7 @@ class ServiceController extends Controller
         if ($request->user()->id !== $service->user_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $request->validate([
-            'name' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            'type' => 'required|in:offer,request',
-            'mode' => 'required|in:online,offline',
-           
-            'timesalary'=>'required|integer'
-        ]);
+
         $service->update($request->all());
         return response()->json([
             'message' => 'Service updated successfully',
@@ -97,28 +84,62 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function showOffers(Request $request , $id)
-    {
-          $user = $request->user(); 
-          $offers = Service::where('type', 'offer')
-                               ->where('category_id', $id)
-                        ->get();
+    //يعرض كل الاوفر بكتايجوري معينه ولسا ماتاخدت
+         public function showOffers(Request $request, $id)
+         {
+             $user = $request->user(); 
+             $offers = Service::with('user')
+                              ->where('type', 'offer')
+                              ->where('category_id', $id)
+                              ->orderByRaw("status = 'pending' DESC")
+                              ->get();
+         
              return response()->json([
-               'message' => 'Requests retrieved successfully',
+                 'message' => 'Requests retrieved successfully',
+                 'offers' => $offers
+             ]);
+         }
+
+    //يعرض كل الريكوست بكتايجوري معينه ولسا ماتاخدت
+    public function showRequests(Request $request, $id)
+    {
+            $user = $request->user(); 
+            $requests = Service::with('user')
+                           ->where('type', 'request')
+                           ->where('category_id', $id)
+                           ->orderByRaw("status = 'pending' DESC")
+                           ->get();
+        return response()->json([
+            'message' => 'Requests retrieved successfully',
+            'Requests' => $requests
+        ]);
+    }
+
+    //يعرض الاوفر الخاصه باليوزر بسس
+    public function myOffers(Request $request)
+    {
+          $user = $request->user();
+          $offers = Service::where('user_id', $user->id)
+                     ->where('type', 'offer')
+                     ->get();
+ 
+           return response()->json([
+               'message' => 'Your offers',
                'offers' => $offers
            ]);
     }
 
-    public function showRequests(Request $request , $id)
+    //يعرض ريكوست الخاصه باليوزر بسس
+    public function myRequests(Request $request)
     {
-        $user = $request->user(); 
-        $requests = Service::where('type', 'request')
-                                  ->where('category_id', $id)
-                             ->get();
-           return response()->json([
-             'message' => 'Requests retrieved successfully',
-             'Requests' => $requests
-         ]);
+        $user = $request->user();
+        $requests = Service::where('user_id', $user->id)
+                       ->where('type', 'request')
+                       ->get();
+        return response()->json([
+            'message' => 'Your requests',
+            'requests' => $requests
+        ]);
     }
 
 }

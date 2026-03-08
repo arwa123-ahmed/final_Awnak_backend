@@ -19,16 +19,12 @@ class CategoryController extends Controller
             'en_description' => 'required|string|max:255',
             'ar_description' => 'required|string|max:255'
         ]);
-        
-
         $input = $request->all();
-
         Category::create($input);
          return response()->json([
             'message' => 'Category added successfully',
             'category' => $input,
         ]);
-
     }
 
     public function editCategory (Request $request , $id)
@@ -41,10 +37,8 @@ class CategoryController extends Controller
             'en_description' => 'required|string|max:255',
             'ar_description' => 'required|string|max:255'
         ]);
-
         $updatedCategory = $request->all();
-         $category->update($updatedCategory);
-
+        $category->update($updatedCategory);
           return response()->json([
             'message' => 'category updated successfully',
             'updatedCategory' => $updatedCategory,
@@ -82,5 +76,5 @@ class CategoryController extends Controller
         ]);
 
     }
-
+    
     }

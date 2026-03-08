@@ -11,9 +11,10 @@ class DeleteExpiredServices extends Command
     protected $signature = 'services:delete-expired';
     protected $description = 'Delete services whose expires_at has passed';
 
-       public function handle()
-    {
-       Service::where('expires_at', '<', Carbon::now())->delete();
-       
-    }
+   public function handle()
+{
+    Service::where('status', 'pending')
+           ->where('expires_at', '<', Carbon::now())
+           ->delete();
+}
 }

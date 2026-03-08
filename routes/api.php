@@ -55,12 +55,17 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
     // نعرض نضيف نعدل نحذف خدمه
+    Route::get('/services/offers/{id}', [ServiceController::class, 'showOffers']);
+    Route::get('/services/requests/{id}', [ServiceController::class, 'showRequests']);
+    
     Route::get('/services', [ServiceController::class, 'index']);       
     Route::get('/services/{id}', [ServiceController::class, 'show']);   
     Route::post('/services', [ServiceController::class, 'create']);     
     Route::put('/services/{id}', [ServiceController::class, 'update']); 
     Route::delete('/services/{id}', [ServiceController::class, 'destroy']); 
-    Route::get('/services', [ServiceController::class, 'show_type']);
+
+    Route::get('/my-offers', [ServiceController::class, 'myOffers']);
+    Route::get('/my-requests', [ServiceController::class, 'myRequests']);
     // نضيف نحذف نعدل كاتيجوري
     Route::post('/storeCategory', [CategoryController::class, 'storeCategory']);
     Route::PUT('/editCategory/{id}', [CategoryController::class, 'editCategory']);
@@ -90,10 +95,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
    Route::post('/recharge-balance', [RechargeBalanceController::class, 'store']);
    Route::post('/moneyTransfer/{id}', [ServiceMatchController::class, 'moneyTransfer']);
    //عرض الطلبات والعروض والكاتيجوري مع تسجيل  
-    Route::get('showOffers/{id}', [ServiceController::class, 'showOffers']); 
-    Route::get('showRequests/{id}', [ServiceController::class, 'showRequests']);
-
    });
-   
+    Route::get('/categories/filter', [CategoryController::class, 'showCategory']);
     Route::get('/categories', [CategoryController::class, 'index']);
    

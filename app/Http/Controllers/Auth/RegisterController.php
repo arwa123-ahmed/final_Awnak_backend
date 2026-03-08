@@ -104,7 +104,7 @@ public function update(Request $request)
 */
 
 
-   public function sendOtp(Request $request)
+    public function sendOtp(Request $request)
     {
         $request->validate([
             'email' => 'required|email'
@@ -116,24 +116,23 @@ public function update(Request $request)
     }
 
     // VERIFY OTP
-    public function verifyOtp(Request $request)
-    {
+    public function verifyOtp(Request $request){
         $request->validate([
             'email' => 'required|email',
             'otp' => 'required'
-        ]);
+            ]);
         $cachedOtp = Cache::get('otp_' . $request->email);
         if (!$cachedOtp) {
             return response()->json(['message' => 'OTP expired'], 422);
-        }
+            }
         if ($cachedOtp != $request->otp) {
             return response()->json(['message' => 'Invalid OTP'], 422);
-        }
+            }
         //check about email
         Cache::put('verified_' . $request->email, true, now()->addMinutes(10));
         return response()->json([
             'message' => 'OTP verified successfully'
-        ]);
+            ]);
     }
 
       // REGISTERATION
@@ -153,9 +152,9 @@ public function update(Request $request)
         ]);
 
         // check about email status
-        if (!Cache::get('verified_' . $request->email)) {
-            return response()->json(['message' => 'Email not verified'], 422);
-        }
+          if (!Cache::get('verified_' . $request->email)) {
+          return response()->json(['message' => 'Email not verified'], 422);
+            }
         //default img if img not exist
         $path = 'ids/user.png';
 
@@ -208,7 +207,7 @@ public function update(Request $request)
         if (!Auth::attempt($credintial)) {
             return response()->json(['message' => "invalid credintial"]);
         }
-        $user = Auth::user(); //store user data
+        $user = Auth::user(); 
        /** @var \App\Models\User $user */
        $token = $user->createToken('token')->plainTextToken;
         return response()->json(['message' => 'login successfully', 'user' => $user, 'token' => $token]);
@@ -224,7 +223,7 @@ public function update(Request $request)
     //     return response()->json(["msg" => "mail confirmed to reset password"]);
     // }
 
-public function forgetPassword(Request $request)
+    public function forgetPassword(Request $request)
     {
         // dd(config('app.frontend_url'));
         $request->validate([
@@ -305,57 +304,56 @@ public function forgetPassword(Request $request)
     //     return response()->json(["msg" => "updated user successfully"]);
     // }
 
-public function updateUser(Request $request)
-{
+    public function updateUser(Request $request)
+   {
     $user = auth()->user();
     if (!$user) {
         return response()->json(['msg' => 'Unauthorized'], 401);
     }
 
-  $data = $request->validate([
-    'name'              => 'nullable|string|max:255',
-    'age'               => 'nullable|integer',
-    'email'             => 'nullable|email|max:255',
-    'phone'             => 'nullable|string|max:20',
-    'nationality'       => 'nullable|string|max:255',
-    'city'              => 'nullable|string|max:255',
-    'area'              => 'nullable|string|max:255',
-    'gps'               => 'nullable|string|max:255',
-    'national_id'       => 'nullable|string|max:255',
-    'national_id_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
-    'passport_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-    'id_image'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
-]);
+     $data = $request->validate([
+    'name'=>'nullable|string|max:255',
+    'age'=>'nullable|integer',
+    'email'=>'nullable|email|max:255',
+    'phone'=>'nullable|string|max:20',
+    'nationality'=>'nullable|string|max:255',
+    'city'=> 'nullable|string|max:255',
+    'area'=>'nullable|string|max:255',
+    'gps'=>'nullable|string|max:255',
+    'national_id'=> 'nullable|string|max:255',
+    'national_id_image' =>'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
+    'passport_image'=>'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+    'id_image'=> 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
+    ]);
 
-if ($request->hasFile('id_image')) {
+    if ($request->hasFile('id_image')) {
     $data['id_image'] = $request->file('id_image')->store('default-user', 'public');
-}
+    }
 
-if ($request->hasFile('national_id_image')) {
+    if ($request->hasFile('national_id_image')) {
     $data['national_id_image'] = $request->file('national_id_image')->store('default-user', 'public');
-}
+    }
 
-if ($request->hasFile('passport_image')) {
+    if ($request->hasFile('passport_image')) {
     $data['passport_image'] = $request->file('passport_image')->store('default-user', 'public');
-}
+    }
 
-if (isset($data['area'])) {
+    if (isset($data['area'])) {
     $data['street'] = $data['area'];
     unset($data['area']);
-}
+    }
+    $filtered = array_filter($data, fn($value) => !is_null($value));
+    $user->update($data);
+    // $user->update($filtered);
 
-$filtered = array_filter($data, fn($value) => !is_null($value));
-$user->update($data);
-// $user->update($filtered);
-
-return response()->json([
+    return response()->json([
     'msg'  => 'User updated successfully',
     'user' => $user->fresh()
-], 200);
-}
+    ], 200);
+   }
 
    
-   //edit user role
+     //edit user role
     public function updateRole(Request $request)
     {
         $data = $request->validate([
