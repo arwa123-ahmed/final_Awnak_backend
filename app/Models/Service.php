@@ -15,8 +15,8 @@ class Service extends Model
         'type',
         'status',
         'timesalary',
-        'expires_at',
-        'end_time'
+        'end_time',
+        'service_location'
     ];
     protected $casts = [
         'end_time' => 'datetime',

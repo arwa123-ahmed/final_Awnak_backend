@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('status');
             $table->decimal('timesalary', 8, 2)->default(0);
             $table->timestamp('end_time')->nullable();
-            $table->timestamp('expires_at')->nullable();
+            $table->string('service_location');
             $table->timestamps();
         });
     }

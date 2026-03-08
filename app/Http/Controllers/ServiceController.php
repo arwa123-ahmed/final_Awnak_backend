@@ -26,7 +26,7 @@ class ServiceController extends Controller
             'description' => 'nullable|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'type' => 'required|in:offer,request',
-            //في لوكيشن لسا
+            'service_location'=>'nullable|string|max:255',
             'timesalary'=>'required|integer'
         ]);
           $user = $request->user();
@@ -44,12 +44,12 @@ class ServiceController extends Controller
         $service = Service::create([
         'name' => $request->name,
         'description' => $request->description,
+        'service_location' => $request->service_location,
         'user_id' => $user->id,
         'category_id' => $request->category_id,
         'type' => $request->type,
         'status' => 'pending',
         'timesalary' => $request->timesalary,
-        //في لوكيشن لسا
         ]);
        
         return response()->json([
