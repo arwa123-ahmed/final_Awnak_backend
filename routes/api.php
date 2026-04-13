@@ -1,34 +1,41 @@
-<?php
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\ServiceMatchController;
-use App\Http\Controllers\RatingController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\RechargeBalanceController;
-use Illuminate\Support\Facades\Mail;
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middle ware group. Make something great!
-|
-*/
-Route::get('/test', function () {
-    return response()->json(['message' => 'API works']);
-});
+    <?php
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+    use App\Models\User;
+    use Illuminate\Support\Facades\Hash;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Route;
+    use App\Http\Controllers\Auth\RegisterController;
+    use App\Http\Controllers\ServiceController;
+    use App\Http\Controllers\CategoryController;
+    use App\Http\Controllers\ChatbotController;
+    use App\Http\Controllers\Controller;
+    use App\Http\Controllers\ServiceMatchController;
+    use App\Http\Controllers\RatingController;
+    use App\Http\Controllers\ReportController;
+    use App\Http\Controllers\RechargeBalanceController;
+    use App\Http\Controllers\Admin\ServiceManagementController;
+    use App\Http\Controllers\ChatController;
+
+
+    use Illuminate\Support\Facades\Mail;
+    /*
+    |--------------------------------------------------------------------------
+    | API Routes
+    |--------------------------------------------------------------------------
+    |
+    | Here is where you can register API routes for your application. These
+    | routes are loaded by the RouteServiceProvider and all of them will
+    | be assigned to the "api" middle ware group. Make something great!
+    |
+    */
+
+    Route::get('/test', function () {
+        return response()->json(['message' => 'API works']);
+    });
+
+    Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+        return $request->user();
+    });
 
     //define routes for registeration -->> data not send to backend until verify otp
     Route::post('/send-otp', [RegisterController::class, 'sendOtp']);
@@ -39,63 +46,106 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     //for forgetting password
     Route::post('/forget-password', [RegisterController::class, 'forgetPassword']);
     Route::post('/reset-password', [RegisterController::class, 'resetPassword']);
- 
+
 
     // تسجيل اليوزر
-   // Route::post('/register', [RegisterController::class, 'register']);
-   // Route::post('/login', [RegisterController::class, 'login']);
-    Route::post('/logout', [RegisterController::class,'logout'])->middleware("auth:sanctum");
-    Route::put('/profile', [RegisterController::class,'update'])->middleware("auth:sanctum");
+    // Route::post('/register', [RegisterController::class, 'register']);
+    // Route::post('/login', [RegisterController::class, 'login']);
+    Route::post('/logout', [RegisterController::class, 'logout'])->middleware("auth:sanctum");
+    Route::put('/profile', [RegisterController::class, 'update'])->middleware("auth:sanctum");
 
     Route::middleware('auth:sanctum')->group(function () {
-    //تبعات عمار 
-    Route::post('/update/role', [RegisterController::class, 'updateRole']);
-    Route::post('/update/user', [RegisterController::class, 'updateUser']);
+        //تبعات عمار
+        Route::post('/update/role', [RegisterController::class, 'updateRole']);
+        Route::post('/update/user', [RegisterController::class, 'updateUser']);
 
 
 
-    // نعرض نضيف نعدل نحذف خدمه
-    Route::get('/services/offers/{id}', [ServiceController::class, 'showOffers']);
-    Route::get('/services/requests/{id}', [ServiceController::class, 'showRequests']);
-    
-    Route::get('/services', [ServiceController::class, 'index']);       
-    Route::get('/services/{id}', [ServiceController::class, 'show']);   
-    Route::post('/services', [ServiceController::class, 'create']);     
-    Route::put('/services/{id}', [ServiceController::class, 'update']); 
-    Route::delete('/services/{id}', [ServiceController::class, 'destroy']); 
+        // نعرض نضيف نعدل نحذف خدمه
+        Route::get('/services/offers/{id}', [ServiceController::class, 'showOffers']);
+        Route::get('/services/requests/{id}', [ServiceController::class, 'showRequests']);
 
-    Route::get('/my-offers', [ServiceController::class, 'myOffers']);
-    Route::get('/my-requests', [ServiceController::class, 'myRequests']);
-    // نضيف نحذف نعدل كاتيجوري
-    Route::post('/storeCategory', [CategoryController::class, 'storeCategory']);
-    Route::PUT('/editCategory/{id}', [CategoryController::class, 'editCategory']);
-    Route::DELETE('/deleteCategory/{id}', [CategoryController::class, 'deleteCategory']);
-    Route::get('/showCategory', [CategoryController::class, 'showCategory']);
-    // طلب خدمة
-    Route::post('/services/{service}/request', [ServiceMatchController::class, 'store']);
-    //  عرض طلبات الفولنتير 
-    Route::get('/volunteer/requests', [ServiceMatchController::class, 'volunteerRequests']);
-    // عرض طلبات الكاستمر
-    Route::get('/customer/requests', [ServiceMatchController::class, 'customerRequests']);
+        Route::get('/services', [ServiceController::class, 'index']);
+        Route::get('/services/{id}', [ServiceController::class, 'show']);
+        Route::post('/services', [ServiceController::class, 'create']);
+        Route::put('/services/{id}', [ServiceController::class, 'update']);
+        Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
 
-// Section Category Delivary !!!!!!!! 
-    // تحديث حالة الطلب (فولنتير , كاستمر)
-    Route::put('/service-matches/{id}/update-status-volunteer', [ServiceMatchController::class, 'updateStatusByVolunteer']);
-    Route::put('/service-matches/{id}/update-status-Customer', [ServiceMatchController::class, 'updateStatusByCustomer']);
-    //بحالة خلص المتطوع قبل نهايه الوقت
-    Route::put('/orderFinished/{id}', [ServiceMatchController::class, 'orderFinished']); 
-    // بحالة انو المتطوع يتأخر
-    Route::post('/service-match/{id}/volunteer-delay', [ServiceMatchController::class, 'volunteerDelay']);
-// Done...... Section Category Delivary !!!!!!!! 
-   //rating route
-   Route::post('/ratings/{servicematch_id}', [RatingController::class, 'store']);
-   //report route
-   Route::post('/report/{id}', [ReportController::class, 'store']);
+        Route::get('/my-offers', [ServiceController::class, 'myOffers']);
+        Route::get('/my-requests', [ServiceController::class, 'myRequests']);
+        // نضيف نحذف نعدل كاتيجوري
+        Route::post('/storeCategory', [CategoryController::class, 'storeCategory']);
+        Route::PUT('/editCategory/{id}', [CategoryController::class, 'editCategory']);
+        Route::DELETE('/deleteCategory/{id}', [CategoryController::class, 'deleteCategory']);
+        Route::get('/showCategory', [CategoryController::class, 'showCategory']);
+        // طلب خدمة
+        Route::post('/services/{service}/request', [ServiceMatchController::class, 'store']);
+        //  عرض طلبات الفولنتير
+        Route::get('/volunteer/requests', [ServiceMatchController::class, 'volunteerRequests']);
+        // عرض طلبات الكاستمر
+        Route::get('/customer/requests', [ServiceMatchController::class, 'customerRequests']);
 
-   Route::post('/recharge-balance', [RechargeBalanceController::class, 'store']);
-   Route::post('/moneyTransfer/{id}', [ServiceMatchController::class, 'moneyTransfer']);
-   //عرض الطلبات والعروض والكاتيجوري مع تسجيل  
-   });
+        // Section Category Delivary !!!!!!!!
+        // تحديث حالة الطلب (فولنتير , كاستمر)
+        Route::put('/service-matches/{id}/update-status-volunteer', [ServiceMatchController::class, 'updateStatusByVolunteer']);
+        Route::put('/service-matches/{id}/update-status-Customer', [ServiceMatchController::class, 'updateStatusByCustomer']);
+        //بحالة خلص المتطوع قبل نهايه الوقت
+        Route::put('/orderFinished/{id}', [ServiceMatchController::class, 'orderFinished']);
+        // بحالة انو المتطوع يتأخر
+        Route::post('/service-match/{id}/volunteer-delay', [ServiceMatchController::class, 'volunteerDelay']);
+        // Done...... Section Category Delivary !!!!!!!!
+        //rating route
+        Route::post('/ratings/{servicematch_id}', [RatingController::class, 'store']);
+        //report route
+        Route::post('/report/{id}', [ReportController::class, 'store']);
+
+        Route::post('/recharge-balance', [RechargeBalanceController::class, 'store']);
+        Route::post('/moneyTransfer/{id}', [ServiceMatchController::class, 'moneyTransfer']);
+        //عرض الطلبات والعروض والكاتيجوري مع تسجيل
+    });
     Route::get('/categories/filter', [CategoryController::class, 'showCategory']);
     Route::get('/categories', [CategoryController::class, 'index']);
-   
+
+    // chatbot
+    Route::post('/chatbot', [ChatbotController::class, 'reply']);
+
+    use App\Http\Controllers\Admin\UserManagementController;
+
+    Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+        Route::get('/users', [UserManagementController::class, 'index']);
+        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+        Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
+        Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
+    });
+
+
+    Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+
+        // USERS
+        Route::get('/users', [UserManagementController::class, 'index']);
+        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+
+        Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
+        Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
+
+        Route::post('/users/{id}/update-national-id', [UserManagementController::class, 'updateNationalId']);
+        // activation
+        Route::post('/users/{id}/activation', [UserManagementController::class, 'toggleActivation']);
+
+        // SERVICES
+        Route::get('/services', [ServiceManagementController::class, 'index']);
+        Route::delete('/services/{id}', [ServiceManagementController::class, 'destroy']);
+    });
+
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // Chat
+        Route::get('/chat/{matchId}/messages', [ChatController::class, 'getMessages']);
+        Route::post('/chat/{matchId}/messages', [ChatController::class, 'sendMessage']);
+        Route::put('/chat/{matchId}/done', [ChatController::class, 'markDone']);
+
+        // ✅ مهم
+        Route::get('/my-matches', [ServiceMatchController::class, 'myMatches']);
+    });
+    Route::middleware('auth:sanctum')->get('/profile/{id}', [RegisterController::class, 'show']);

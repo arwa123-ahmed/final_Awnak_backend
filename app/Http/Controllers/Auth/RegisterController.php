@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -15,7 +17,7 @@ use Illuminate\Support\Str;
 
 class RegisterController extends Controller
 {
-/*
+    /*
     public function register(Request $request)
 {
     $request->validate([
@@ -61,7 +63,7 @@ class RegisterController extends Controller
                     'email' => ['The provided credentials are incorrect.'],
                 ]);
             }
-              //'access_token' => 'token_type' => 
+              //'access_token' => 'token_type' =>
            return response()->json([
            'user' => $user,
            'access_token' => $user->createToken('auth_token')->plainTextToken,
@@ -82,7 +84,7 @@ class RegisterController extends Controller
 
 public function update(Request $request)
 {
-    $user = $request->user(); 
+    $user = $request->user();
 
     $request->validate([
         'name' => 'required|string',
@@ -116,26 +118,27 @@ public function update(Request $request)
     }
 
     // VERIFY OTP
-    public function verifyOtp(Request $request){
+    public function verifyOtp(Request $request)
+    {
         $request->validate([
             'email' => 'required|email',
             'otp' => 'required'
-            ]);
+        ]);
         $cachedOtp = Cache::get('otp_' . $request->email);
         if (!$cachedOtp) {
             return response()->json(['message' => 'OTP expired'], 422);
-            }
+        }
         if ($cachedOtp != $request->otp) {
             return response()->json(['message' => 'Invalid OTP'], 422);
-            }
+        }
         //check about email
         Cache::put('verified_' . $request->email, true, now()->addMinutes(10));
         return response()->json([
             'message' => 'OTP verified successfully'
-            ]);
+        ]);
     }
 
-      // REGISTERATION
+    // REGISTERATION
     public function register(Request $request)
     {
         $request->validate([
@@ -148,13 +151,13 @@ public function update(Request $request)
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone' => 'required|unique:users,phone',
-            
+
         ]);
 
         // check about email status
-          if (!Cache::get('verified_' . $request->email)) {
-          return response()->json(['message' => 'Email not verified'], 422);
-            }
+        if (!Cache::get('verified_' . $request->email)) {
+            return response()->json(['message' => 'Email not verified'], 422);
+        }
         //default img if img not exist
         $path = 'ids/user.png';
 
@@ -173,7 +176,7 @@ public function update(Request $request)
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            
+
         ]);
 
         // delete otp
@@ -185,8 +188,8 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
-    
-     //check email
+
+    //check email
     public function checkEmail(Request $request)
     {
         $request->validate([
@@ -207,9 +210,9 @@ public function update(Request $request)
         if (!Auth::attempt($credintial)) {
             return response()->json(['message' => "invalid credintial"]);
         }
-        $user = Auth::user(); 
-       /** @var \App\Models\User $user */
-       $token = $user->createToken('token')->plainTextToken;
+        $user = Auth::user();
+        /** @var \App\Models\User $user */
+        $token = $user->createToken('token')->plainTextToken;
         return response()->json(['message' => 'login successfully', 'user' => $user, 'token' => $token]);
     }
 
@@ -305,55 +308,59 @@ public function update(Request $request)
     // }
 
     public function updateUser(Request $request)
-   {
-    $user = auth()->user();
-    if (!$user) {
-        return response()->json(['msg' => 'Unauthorized'], 401);
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['msg' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'age' => 'nullable|integer',
+            'phone' => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'area' => 'nullable|string|max:255',
+            'national_id' => 'nullable|string|max:255',
+            'national_id_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'passport_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'id_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        // ✅ صورة البروفايل
+        if ($request->hasFile('id_image')) {
+            $data['id_image'] = $request->file('id_image')->store('users', 'public');
+        }
+
+        // ✅ صورة البطاقة
+        if ($request->hasFile('national_id_image')) {
+            $data['national_id_image'] = $request->file('national_id_image')->store('users', 'public');
+        }
+
+        // ✅ صورة الباسبور
+        if ($request->hasFile('passport_image')) {
+            $data['passport_image'] = $request->file('passport_image')->store('users', 'public');
+        }
+
+        // تحويل area → street
+        if (isset($data['area'])) {
+            $data['street'] = $data['area'];
+            unset($data['area']);
+        }
+
+        // ✅ المهم هنا بقى 👇
+        $filtered = array_filter($data, fn($value) => !is_null($value));
+
+        $user->update($filtered); // ✔️ بدل data
+
+        return response()->json([
+            'msg'  => 'User updated successfully',
+            'user' => $user->fresh()
+        ], 200);
     }
 
-     $data = $request->validate([
-    'name'=>'nullable|string|max:255',
-    'age'=>'nullable|integer',
-    'email'=>'nullable|email|max:255',
-    'phone'=>'nullable|string|max:20',
-    'nationality'=>'nullable|string|max:255',
-    'city'=> 'nullable|string|max:255',
-    'area'=>'nullable|string|max:255',
-    'gps'=>'nullable|string|max:255',
-    'national_id'=> 'nullable|string|max:255',
-    'national_id_image' =>'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
-    'passport_image'=>'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-    'id_image'=> 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', 
-    ]);
 
-    if ($request->hasFile('id_image')) {
-    $data['id_image'] = $request->file('id_image')->store('default-user', 'public');
-    }
-
-    if ($request->hasFile('national_id_image')) {
-    $data['national_id_image'] = $request->file('national_id_image')->store('default-user', 'public');
-    }
-
-    if ($request->hasFile('passport_image')) {
-    $data['passport_image'] = $request->file('passport_image')->store('default-user', 'public');
-    }
-
-    if (isset($data['area'])) {
-    $data['street'] = $data['area'];
-    unset($data['area']);
-    }
-    $filtered = array_filter($data, fn($value) => !is_null($value));
-    $user->update($data);
-    // $user->update($filtered);
-
-    return response()->json([
-    'msg'  => 'User updated successfully',
-    'user' => $user->fresh()
-    ], 200);
-   }
-
-   
-     //edit user role
+    //edit user role
     public function updateRole(Request $request)
     {
         $data = $request->validate([
@@ -371,6 +378,28 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
-  
-}
+    public function show($id)
+    {
+        $user = User::withCount('ratings')
+            ->withAvg('ratings', 'stars')
+            ->find($id);
 
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'id_image' => $user->id_image,
+                'ratings_count' => $user->ratings_count,
+                'average_rating' => $user->ratings_avg_stars ?? 0,
+            ]
+        ]);
+    }
+}
