@@ -106,6 +106,7 @@ public function update(Request $request)
 */
 
 
+     //هي فنكشن بتستقبل ريكوست من اليوزر
     public function sendOtp(Request $request)
     {
         $request->validate([
@@ -118,29 +119,31 @@ public function update(Request $request)
     }
 
     // VERIFY OTP
-    public function verifyOtp(Request $request)
-    {
+    public function verifyOtp(Request $request){
         $request->validate([
             'email' => 'required|email',
             'otp' => 'required'
-        ]);
+            ]);
+            // اذا الكود مو موجود
         $cachedOtp = Cache::get('otp_' . $request->email);
         if (!$cachedOtp) {
             return response()->json(['message' => 'OTP expired'], 422);
-        }
+            }
+            // اذا الكود غلط
         if ($cachedOtp != $request->otp) {
             return response()->json(['message' => 'Invalid OTP'], 422);
-        }
+            }
         //check about email
         Cache::put('verified_' . $request->email, true, now()->addMinutes(10));
         return response()->json([
             'message' => 'OTP verified successfully'
-        ]);
+            ]);
     }
 
     // REGISTERATION
     public function register(Request $request)
     {
+        // بنتحقق اول شي من البيانات
         $request->validate([
             'name' => 'required|string',
             'gender' => 'required|in:male,female',
@@ -151,13 +154,13 @@ public function update(Request $request)
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone' => 'required|unique:users,phone',
-
+            
         ]);
 
         // check about email status
-        if (!Cache::get('verified_' . $request->email)) {
-            return response()->json(['message' => 'Email not verified'], 422);
-        }
+          if (!Cache::get('verified_' . $request->email)) {
+          return response()->json(['message' => 'Email not verified'], 422);
+            }
         //default img if img not exist
         $path = 'ids/user.png';
 
@@ -176,10 +179,10 @@ public function update(Request $request)
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-
+            
         ]);
 
-        // delete otp
+        // delete otp بعد ماسجل
         Cache::forget('otp_' . $request->email);
         Cache::forget('verified_' . $request->email);
 
@@ -188,7 +191,7 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
-
+  
     //check email
     public function checkEmail(Request $request)
     {
@@ -210,9 +213,9 @@ public function update(Request $request)
         if (!Auth::attempt($credintial)) {
             return response()->json(['message' => "invalid credintial"]);
         }
-        $user = Auth::user();
-        /** @var \App\Models\User $user */
-        $token = $user->createToken('token')->plainTextToken;
+        $user = Auth::user(); 
+       /** @var \App\Models\User $user */
+       $token = $user->createToken('token')->plainTextToken;
         return response()->json(['message' => 'login successfully', 'user' => $user, 'token' => $token]);
     }
 
@@ -327,40 +330,37 @@ public function update(Request $request)
             'id_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-        // ✅ صورة البروفايل
         if ($request->hasFile('id_image')) {
-            $data['id_image'] = $request->file('id_image')->store('users', 'public');
+        $data['id_image'] = $request->file('id_image')->store('default-user', 'public');
         }
 
-        // ✅ صورة البطاقة
         if ($request->hasFile('national_id_image')) {
-            $data['national_id_image'] = $request->file('national_id_image')->store('users', 'public');
+        $data['national_id_image'] = $request->file('national_id_image')->store('default-user', 'public');
         }
 
-        // ✅ صورة الباسبور
         if ($request->hasFile('passport_image')) {
-            $data['passport_image'] = $request->file('passport_image')->store('users', 'public');
+        $data['passport_image'] = $request->file('passport_image')->store('default-user', 'public');
         }
-
-        // تحويل area → street
+          //اسست يعني هل الايريا موجوده وفيها قيمه طيب لوفيها قيمه غير اسمها لشارع
         if (isset($data['area'])) {
-            $data['street'] = $data['area'];
-            unset($data['area']);
+        $data['street'] = $data['area'];
+        unset($data['area']);
         }
 
-        // ✅ المهم هنا بقى 👇
-        $filtered = array_filter($data, fn($value) => !is_null($value));
-
-        $user->update($filtered); // ✔️ بدل data
-
-        return response()->json([
-            'msg'  => 'User updated successfully',
-            'user' => $user->fresh()
-        ], 200);
+            // ✅ المهم هنا بقى 👇
+            $filtered = array_filter($data, fn($value) => !is_null($value));
+    
+            $user->update($filtered); // ✔️ بدل data // تعديل جديد
+    
+            return response()->json([
+                'msg'  => 'User updated successfully',
+                'user' => $user->fresh()
+            ], 200);
     }
 
 
-    //edit user role
+    
+        //edit user role
     public function updateRole(Request $request)
     {
         $data = $request->validate([
@@ -378,6 +378,7 @@ public function update(Request $request)
             'user' => $user
         ]);
     }
+    
     public function show($id)
     {
         $user = User::withCount('ratings')
@@ -402,4 +403,15 @@ public function update(Request $request)
             ]
         ]);
     }
+
+    //balance 
+ public function getBalance(Request $request)
+{
+    $user = $request->user();
+    return response()->json([
+        'basicCharge'         => ['minutes' => (float) $user->balance],
+        'VolunteeringBalance' => ['minutes' => (float) $user->earnedBalance],
+        'total'               => ['minutes' => (float) $user->balance + (float) $user->earnedBalance],
+    ]);
+}
 }

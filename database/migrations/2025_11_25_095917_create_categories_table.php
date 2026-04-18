@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('en_name');
             $table->string('ar_name');
             $table->enum('mode', ['online', 'offline']);
-$table->string('en_description');
-$table->string('ar_description');
+            $table->string('en_description');
+            $table->string('ar_description');
             $table->timestamps();
         });
     }

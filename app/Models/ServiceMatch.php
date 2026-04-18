@@ -14,7 +14,9 @@ class ServiceMatch extends Model
         'status',
         'delay_minutes',
         'delay_reason',
-        'delay_status'
+        'delay_status',
+         'inquiry_messages',   
+        'status',  
     ];
 
     public function volunteer()

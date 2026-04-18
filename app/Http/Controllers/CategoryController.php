@@ -53,7 +53,7 @@ class CategoryController extends Controller
             'message' => 'Category Deleted successfully',
         ]);
     }
-
+      // ماستخدمناها
     public function index()
     {
       $categories = Category::all();

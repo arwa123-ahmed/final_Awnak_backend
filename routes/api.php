@@ -15,7 +15,9 @@
     use App\Http\Controllers\RechargeBalanceController;
     use App\Http\Controllers\Admin\ServiceManagementController;
     use App\Http\Controllers\ChatController;
-
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ProgrammingController;
+use App\Http\Controllers\NotificationController;
 
     use Illuminate\Support\Facades\Mail;
     /*
@@ -35,6 +37,7 @@
 
     Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
         return $request->user();
+        
     });
 
     //define routes for registeration -->> data not send to backend until verify otp
@@ -53,7 +56,8 @@
     // Route::post('/login', [RegisterController::class, 'login']);
     Route::post('/logout', [RegisterController::class, 'logout'])->middleware("auth:sanctum");
     Route::put('/profile', [RegisterController::class, 'update'])->middleware("auth:sanctum");
-
+   //contact
+Route::post('/contact', [ContactController::class, 'send']);
     Route::middleware('auth:sanctum')->group(function () {
         //تبعات عمار
         Route::post('/update/role', [RegisterController::class, 'updateRole']);
@@ -70,6 +74,7 @@
         Route::post('/services', [ServiceController::class, 'create']);
         Route::put('/services/{id}', [ServiceController::class, 'update']);
         Route::delete('/services/{id}', [ServiceController::class, 'destroy']);
+        
 
         Route::get('/my-offers', [ServiceController::class, 'myOffers']);
         Route::get('/my-requests', [ServiceController::class, 'myRequests']);
@@ -87,12 +92,24 @@
 
         // Section Category Delivary !!!!!!!!
         // تحديث حالة الطلب (فولنتير , كاستمر)
-        Route::put('/service-matches/{id}/update-status-volunteer', [ServiceMatchController::class, 'updateStatusByVolunteer']);
-        Route::put('/service-matches/{id}/update-status-Customer', [ServiceMatchController::class, 'updateStatusByCustomer']);
+        // Route::put('/service-matches/{id}/update-status-volunteer', [ServiceMatchController::class, 'updateStatusByVolunteer']);
+        // Route::put('/service-matches/{id}/update-status-Customer', [ServiceMatchController::class, 'updateStatusByCustomer']);
         //بحالة خلص المتطوع قبل نهايه الوقت
-        Route::put('/orderFinished/{id}', [ServiceMatchController::class, 'orderFinished']);
+        
+        // Route::put('/orderFinished/{id}', [ServiceMatchController::class, 'orderFinished']);
+        // ✅ جديد - بيستخدم ProgrammingController
+
+
         // بحالة انو المتطوع يتأخر
         Route::post('/service-match/{id}/volunteer-delay', [ServiceMatchController::class, 'volunteerDelay']);
+        //service done 
+          Route::put('/service-matches/{id}/update-status-volunteer', [ProgrammingController::class, 'updateStatusByVolunteer']);
+    Route::put('/service-matches/{id}/update-status-Customer', [ProgrammingController::class, 'updateStatusByCustomer']);
+    Route::put('/orderFinished/{id}', [ProgrammingController::class, 'orderFinished']);
+    // Route::put('/orderFinished/{id}', [ProgrammingController::class, 'orderFinished']);
+Route::post('/service-matches/{id}/done', [ProgrammingController::class, 'orderFinished']); // ✅ أضف السطر ده
+
+        // Route::post('/service-matches/{id}/done', [ServiceMatchController::class, 'orderFinished']);
         // Done...... Section Category Delivary !!!!!!!!
         //rating route
         Route::post('/ratings/{servicematch_id}', [RatingController::class, 'store']);
@@ -102,50 +119,85 @@
         Route::post('/recharge-balance', [RechargeBalanceController::class, 'store']);
         Route::post('/moneyTransfer/{id}', [ServiceMatchController::class, 'moneyTransfer']);
         //عرض الطلبات والعروض والكاتيجوري مع تسجيل
-    });
+    
+       Route::get('/chat/{match_id}/messages', [ChatController::class, 'getMessages']);
+       Route::post('/chat/{match_id}/messages', [ChatController::class, 'sendMessage']);
+       Route::put('/chat/{match_id}/done', [ChatController::class, 'markDone']);
+       Route::post('/inquiry/{volunteer_id}', [ChatController::class, 'startInquiry']);
+       // notification
+       Route::get('/my-matches', [ServiceMatchController::class, 'myMatchRequests']);
+    
+//balance
+ Route::get('/balance', [RegisterController::class, 'getBalance']);
+ 
+        });
+
     Route::get('/categories/filter', [CategoryController::class, 'showCategory']);
     Route::get('/categories', [CategoryController::class, 'index']);
 
     // chatbot
     Route::post('/chatbot', [ChatbotController::class, 'reply']);
+   
 
     use App\Http\Controllers\Admin\UserManagementController;
 
+    // Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    //     Route::get('/users', [UserManagementController::class, 'index']);
+    //     Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+    //     Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
+    //     Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
+    // });
+
+
+    // Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+
+    //     // USERS
+    //     Route::get('/users', [UserManagementController::class, 'index']);
+    //     Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+
+    //     Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
+    //     Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
+
+    //     Route::post('/users/{id}/update-national-id', [UserManagementController::class, 'updateNationalId']);
+    //     // activation
+    //     Route::post('/users/{id}/activation', [UserManagementController::class, 'toggleActivation']);
+
+    //     // SERVICES
+    //     Route::get('/services', [ServiceManagementController::class, 'index']);
+    //     Route::delete('/services/{id}', [ServiceManagementController::class, 'destroy']);
+    //     //Recharge balance (a)
+    //      Route::get('/recharges', [RechargeBalanceController::class, 'index']);
+    // Route::post('/recharges/{id}/approve', [RechargeBalanceController::class, 'approve']);
+    // Route::post('/recharges/{id}/reject', [RechargeBalanceController::class, 'reject']);
+    // });
     Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
-        Route::get('/users', [UserManagementController::class, 'index']);
-        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
-        Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
-        Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
-    });
+    // USERS
+    Route::get('/users', [UserManagementController::class, 'index']);
+    Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+    Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
+    Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
+    Route::post('/users/{id}/update-national-id', [UserManagementController::class, 'updateNationalId']);
+    Route::post('/users/{id}/activation', [UserManagementController::class, 'toggleActivation']);
+
+    // SERVICES
+    Route::get('/services', [ServiceManagementController::class, 'index']);
+    Route::delete('/services/{id}', [ServiceManagementController::class, 'destroy']);
+
+    // RECHARGES
+    Route::get('/recharges', [RechargeBalanceController::class, 'index']);
+    Route::post('/recharges/{id}/approve', [RechargeBalanceController::class, 'approve']);
+    Route::post('/recharges/{id}/reject', [RechargeBalanceController::class, 'reject']);
+});
 
 
-    Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    // Route::middleware('auth:sanctum')->group(function () {
 
-        // USERS
-        Route::get('/users', [UserManagementController::class, 'index']);
-        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+    //     // Chat
+    //     Route::get('/chat/{matchId}/messages', [ChatController::class, 'getMessages']);
+    //     Route::post('/chat/{matchId}/messages', [ChatController::class, 'sendMessage']);
+    //     Route::put('/chat/{matchId}/done', [ChatController::class, 'markDone']);
 
-        Route::post('/users/{id}/suspend', [UserManagementController::class, 'suspend']);
-        Route::post('/users/{id}/unsuspend', [UserManagementController::class, 'unsuspend']);
-
-        Route::post('/users/{id}/update-national-id', [UserManagementController::class, 'updateNationalId']);
-        // activation
-        Route::post('/users/{id}/activation', [UserManagementController::class, 'toggleActivation']);
-
-        // SERVICES
-        Route::get('/services', [ServiceManagementController::class, 'index']);
-        Route::delete('/services/{id}', [ServiceManagementController::class, 'destroy']);
-    });
-
-
-    Route::middleware('auth:sanctum')->group(function () {
-
-        // Chat
-        Route::get('/chat/{matchId}/messages', [ChatController::class, 'getMessages']);
-        Route::post('/chat/{matchId}/messages', [ChatController::class, 'sendMessage']);
-        Route::put('/chat/{matchId}/done', [ChatController::class, 'markDone']);
-
-        // ✅ مهم
-        Route::get('/my-matches', [ServiceMatchController::class, 'myMatches']);
-    });
+    //     // ✅ مهم
+    //     Route::get('/my-matches', [ServiceMatchController::class, 'myMatches']);
+    // });
     Route::middleware('auth:sanctum')->get('/profile/{id}', [RegisterController::class, 'show']);

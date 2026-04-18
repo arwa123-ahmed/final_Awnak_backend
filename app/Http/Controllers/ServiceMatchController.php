@@ -55,71 +55,75 @@ class ServiceMatchController extends Controller
     }
 
     //  يعني offer عرض الطلبات الي اجت من الكاستمر للفولنتير
-    public function volunteerRequests(Request $request)
-    {
-        $user = $request->user();
-        $serviceIds = Service::where('type', 'offer')->pluck('id');
-        if ($user->role !== 'volunteer') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $requests = ServiceMatch::where('volunteer_id', $user->id)
-            ->where('status', 'pending')
-            ->whereIn('service_id', $serviceIds)
-            ->get();
-        return response()->json([
-            'requests' => $requests
-        ]);
+public function volunteerRequests(Request $request)
+{
+    $user = $request->user();
+    $serviceIds = Service::where('type', 'offer')->pluck('id');
+    if ($user->role !== 'volunteer') {
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
+   // $requests = ServiceMatch::where('volunteer_id', $user->id)
+    $requests = ServiceMatch::with(['service', 'customer'])->where('status', 'pending')->whereIn('service_id', $serviceIds)->get();
+    return response()->json([
+        'requests' => $requests
+    ]);
+}
 
-    //  يعني request عرض الطلبات الي اجت من الفولنتير للكاستمر
-    public function customerRequests(Request $request)
-    {
-        $user = $request->user();
-        $serviceIds = Service::where('type', 'request')->pluck('id');
-        if ($user->role !== 'customer') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $requests = ServiceMatch::where('customer_id', $user->id)
-            ->where('status', 'pending')
-            ->whereIn('service_id', $serviceIds)
-            ->get();
-        return response()->json([
-            'requests' => $requests
-        ]);
+//  يعني request عرض الطلبات الي اجت من الفولنتير للكاستمر
+public function customerRequests(Request $request)
+{
+    $user = $request->user();
+    $serviceIds = Service::where('type', 'request')->pluck('id');
+    if ($user->role !== 'customer') {
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
+    //$requests = ServiceMatch::where('customer_id', $user->id)
+     $requests = ServiceMatch::with(['service', 'volunteer'])
+    ->where('status', 'pending')
+        ->whereIn('service_id', $serviceIds)
+        ->get();
+    return response()->json([
+        'requests' => $requests
+    ]);
+}
+
+//notification 
+public function myMatchRequests(Request $request)
+{
+    $user = $request->user(); 
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+    $matches = ServiceMatch::with(['service', 'customer', 'volunteer'])->where('volunteer_id', $user->id)->orWhere('customer_id', $user->id)->orderBy('updated_at', 'desc')->get();
+    return response()->json(['matches' => $matches]);
+}
+
 
     // بعد ماتخلص الخدمه يحول الوقت
     public function moneyTransfer($serviceMatchId)
-    {
+{
+    $match = ServiceMatch::findOrFail($serviceMatchId);
+    $service = Service :: findOrFail($match->service_id);
+    $service->update([
+        'status' => 'completed'
+    ]);
+    $customer = $match->customer;   
+    $volunteer = $match->volunteer; 
+    $amount = $match->service->timesalary;
 
-        $match = ServiceMatch::findOrFail($serviceMatchId);
-        if ($match->status !== 'completed') {
-            return response()->json([
-                'message' => 'Service not completed yet'
-            ], 403);
-        }
+    $customer->balance -= $amount;
+    $customer->save();
+    $volunteer->earnedBalance += $amount;
+    $volunteer->save();
+    return response()->json([
+        'message' => 'Payment transferred successfully',
+        'customer_balance' => $customer->balance,
+        'volunteer_balance' => $volunteer->earnedBalance,
+        'service_status' => $service->status
+    ]);
+}
 
-        $customer = $match->customer;   // علاقة belongsTo User
-        $volunteer = $match->volunteer; // علاقة belongsTo User
-        $amount = $match->service->timeSalary;
 
-
-        // Transaction لضمان atomicity
-        DB::transaction(function () use ($customer, $volunteer, $amount, $match) {
-            $customer->balance -= $amount;
-            $customer->save();
-
-            $volunteer->balance += $amount;
-            $volunteer->save();
-        });
-
-        return response()->json([
-            'message' => 'Payment transferred successfully',
-            'customer_balance' => $customer->balance,
-            'volunteer_balance' => $volunteer->balance,
-            'service_status' => $match->status
-        ]);
-    }
 
 
 

@@ -56,7 +56,7 @@ public function store(Request $request, $servicematch_id)
             'average_rating' => $volunteer->average_rating,
             'ratings_count' => $volunteer->ratings_count
         ], 201);
-        } catch (\Exception $e) {
+        } catch (\Exception $e) {// لو صار شي غلط نلغي الفانكشن كلها
         DB::rollBack();
         return response()->json(['error' => $e->getMessage()], 500);
         }

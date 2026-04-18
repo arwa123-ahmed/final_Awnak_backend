@@ -9,8 +9,10 @@ class RechargeBalance extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'user_id',
-        'image',
+    'user_id',
+    'image',
+    'amount',//a
+    'status',//a
     ];
 
     public function user()
