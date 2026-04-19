@@ -52,7 +52,8 @@ class RatingController extends Controller
             $volunteer->save();
 
             // ✅ تحديث status الـ match
-            $service_match->update(['status' => 'Ratinged']);
+            // $service_match->update(['status' => 'Ratinged']);
+            $service_match->update(['status' => 'rated']);
 
             // ✅ تحديث status الـ service لو موجود
             if ($service) {
