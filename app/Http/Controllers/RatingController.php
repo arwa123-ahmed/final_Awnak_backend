@@ -28,28 +28,28 @@ public function store(Request $request, $servicematch_id)
         if ($service_match->status !== 'completed') {
             return response()->json(['message' => 'Service not completed yet'], 403);
         }
-        $rating = Rating::create([
-            'user_id' => $user->id, 
-            'servicematch_id' => $servicematch_id,
-            'stars' => $request->stars,
-            'comment' => $request->comment,
-        ]);
-        $volunteer = User::find($service_match->volunteer_id);
+    $rating = Rating::create([
+    'user_id' => $user->id,
+    'servicematch_id' => $servicematch_id,
+    'stars' => $request->stars,
+    'comment' => $request->comment,
+]);
 
-        $old_count = $volunteer->ratings_count; 
-        $old_total = $volunteer->average_rating * $old_count; 
-        $new_total = $old_total + $request->stars; 
-        $new_count = $old_count + 1; 
-        $volunteer->average_rating = round($new_total / $new_count, 1); 
-        $volunteer->ratings_count = $new_count; 
-        //نجيب عدد التقييمات الأشخاص القديمه  
-        //نجيب عدد متوسط النجوم القديمه
-        //نحسب عدد التقييمات الأشخاص الجديده
-        //نحسب عدد متوسط النجوم الجديده 
-        //ونجيب المتوسط
-        $volunteer->save();
-        $service_match->update(['status' => 'Ratinged']);
-        $service->update(['status' => 'Ratinged']);
+$volunteer = User::find($service_match->volunteer_id);
+$old_count = $volunteer->ratings_count;
+$old_total = $volunteer->average_rating * $old_count;
+$new_total = $old_total + $request->stars;
+$new_count = $old_count + 1;
+$volunteer->average_rating = round($new_total / $new_count, 1);
+$volunteer->ratings_count = $new_count;
+$volunteer->save();
+
+$service_match->update(['status' => 'Ratinged']);
+
+// ✅ تحقق إن الـ service موجود قبل التحديث
+if ($service) {
+    $service->update(['status' => 'Ratinged']);
+}
         DB::commit();
         return response()->json([
             'message' => 'Rating created successfully',
