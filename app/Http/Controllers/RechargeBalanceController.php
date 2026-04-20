@@ -69,10 +69,12 @@ class RechargeBalanceController extends Controller
     
 //   $user->notify(new BalanceRecharged((int)$amount));
   
-    $recharge->user->notifications()->create([
-        'message' => "تم شحن رصيدك بنجاح بمبلغ {$amount} دقيقة 🎉",
-        'type'    => 'recharge',
-    ]);
+    // $recharge->user->notifications()->create([
+    //     'message' => "تم شحن رصيدك بنجاح بمبلغ {$amount} دقيقة 🎉",
+    //     'type'    => 'recharge',
+    // ]);
+    // ✅ ده بس
+$user->notify(new BalanceRecharged((int)$amount));
     // $user->notify(new BalanceRecharged((int)$amount));
 
     return response()->json([
