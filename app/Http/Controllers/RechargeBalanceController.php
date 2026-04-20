@@ -50,9 +50,41 @@ class RechargeBalanceController extends Controller
     }
 
     // ── Admin: approve ──
-  public function approve(Request $request, $id)
+//   public function approve(Request $request, $id)
+// {
+//     $recharge = RechargeBalance::findOrFail($id);
+
+//     if ($recharge->status !== 'pending') {
+//         return response()->json(['message' => 'Already processed.'], 400);
+//     }
+
+//     $amount = $request->input('amount');
+    
+//     if (!$amount || !in_array($amount, [400, 800, 2000])) {
+//         return response()->json(['message' => 'Invalid amount.'], 422);
+//     }
+
+//     $recharge->user->increment('balance', $amount);
+//     $recharge->update(['status' => 'approved']);
+    
+// //   $user->notify(new BalanceRecharged((int)$amount));
+  
+//     // $recharge->user->notifications()->create([
+//     //     'message' => "تم شحن رصيدك بنجاح بمبلغ {$amount} دقيقة 🎉",
+//     //     'type'    => 'recharge',
+//     // ]);
+//     // ✅ ده بس
+// $user->notify(new BalanceRecharged((int)$amount));
+//     // $user->notify(new BalanceRecharged((int)$amount));
+
+//     return response()->json([
+//         'message'     => 'Approved and balance updated.',
+//         'new_balance' => $recharge->user->fresh()->balance,
+//     ]);
+// }
+public function approve(Request $request, $id)
 {
-    $recharge = RechargeBalance::findOrFail($id);
+    $recharge = RechargeBalance::with('user')->findOrFail($id);
 
     if ($recharge->status !== 'pending') {
         return response()->json(['message' => 'Already processed.'], 400);
@@ -60,40 +92,46 @@ class RechargeBalanceController extends Controller
 
     $amount = $request->input('amount');
     
-    if (!$amount || !in_array($amount, [400, 800, 2000])) {
+    if (!$amount || !in_array((int)$amount, [400, 800, 2000])) {
         return response()->json(['message' => 'Invalid amount.'], 422);
     }
 
-    $recharge->user->increment('balance', $amount);
+    // ✅ عرّفي الـ user
+    $user = $recharge->user;
+    $user->increment('balance', (int)$amount);
     $recharge->update(['status' => 'approved']);
-    
-//   $user->notify(new BalanceRecharged((int)$amount));
-  
-    // $recharge->user->notifications()->create([
-    //     'message' => "تم شحن رصيدك بنجاح بمبلغ {$amount} دقيقة 🎉",
-    //     'type'    => 'recharge',
-    // ]);
-    // ✅ ده بس
-$user->notify(new BalanceRecharged((int)$amount));
-    // $user->notify(new BalanceRecharged((int)$amount));
+
+    // ✅ notify
+    $user->notify(new BalanceRecharged((int)$amount));
 
     return response()->json([
         'message'     => 'Approved and balance updated.',
-        'new_balance' => $recharge->user->fresh()->balance,
+        'new_balance' => $user->fresh()->balance,
     ]);
 }
-
     // ── Admin: reject ──
+    // public function reject($id)
+    // {
+    //     $recharge = RechargeBalance::findOrFail($id);
+    //     $recharge->update(['status' => 'rejected']);
+
+    //     $recharge->user->notifications()->create([
+    //         'message' => "تم رفض طلب شحن الرصيد بمبلغ {$recharge->amount} EGP.",
+    //         'type'    => 'recharge',
+    //     ]);
+
+    //     return response()->json(['message' => 'Rejected.']);
+    // }
     public function reject($id)
-    {
-        $recharge = RechargeBalance::findOrFail($id);
-        $recharge->update(['status' => 'rejected']);
-
-        $recharge->user->notifications()->create([
-            'message' => "تم رفض طلب شحن الرصيد بمبلغ {$recharge->amount} EGP.",
-            'type'    => 'recharge',
-        ]);
-
-        return response()->json(['message' => 'Rejected.']);
+{
+    $recharge = RechargeBalance::with('user')->findOrFail($id);
+    
+    if ($recharge->status !== 'pending') {
+        return response()->json(['message' => 'Already processed.'], 400);
     }
+    
+    $recharge->update(['status' => 'rejected']);
+
+    return response()->json(['message' => 'Rejected.']);
+}
 }
