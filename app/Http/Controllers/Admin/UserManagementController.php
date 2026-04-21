@@ -11,7 +11,9 @@ class UserManagementController extends Controller
     // get all users
     public function index()
     {
-        $users = User::latest()->get();
+        // السطر ده بيجيب اليوزرز ومعاهم عدد الريبورتات في خطوة واحدة
+        $users = User::withCount('reportsReceived')->latest()->get();
+
         return response()->json($users);
     }
 

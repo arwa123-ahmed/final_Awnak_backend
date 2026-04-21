@@ -17,7 +17,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-     protected $fillable = [
+    protected $fillable = [
         'name',
         'email',
         'role',
@@ -35,14 +35,14 @@ class User extends Authenticatable
         'national_id',
         'passport_image',
         'national_id_image',
-        
+
     ];
     public function services()
     {
         return $this->hasMany(Service::class);
     }
 
-  
+
     public function volunteerMatches()
     {
         return $this->hasMany(ServiceMatch::class, 'volunteer_id');
@@ -53,11 +53,17 @@ class User extends Authenticatable
         return $this->hasMany(ServiceMatch::class, 'customer_id');
     }
 
-    public function ratings() {
-    return $this->hasMany(Rating::class);
-}
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
 
-
+    public function reportsReceived()
+    {
+        // اليوزر الواحد عنده ريبورتات كتير (HasMany)
+        // والربط في جدول الـ reports بيتم عن طريق عمود الـ reported_id
+        return $this->hasMany(Report::class, 'reported_id');
+    }
 
 
     /**
