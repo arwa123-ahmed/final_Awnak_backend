@@ -9,14 +9,13 @@ class ReportController extends Controller
 {
     // ✅ أضيفي الـ index function
     public function index()
-    {
-        $reports = Report::with(['reporter', 'reported'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+{
+    $reports = Report::with(['reporter', 'reportedUser'])
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        return response()->json($reports);
-    }
-
+    return response()->json($reports);
+}
     public function store(Request $request, $servicematch_id)
     {
         $service_match = ServiceMatch::findOrFail($servicematch_id);
