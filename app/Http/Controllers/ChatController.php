@@ -20,69 +20,78 @@ class ChatController extends Controller
         }
     }
 
-    // ─── GET messages ───
+    //
     public function getMessages(Request $request, $match_id)
     {
         $user  = $request->user();
-        $match = ServiceMatch::findOrFail($match_id);
+        $currentMatch = ServiceMatch::findOrFail($match_id);
 
-        $this->authorizeMatch($match, $user); // ✅ أول حاجة
+        $this->authorizeMatch($currentMatch, $user);
 
-        $messages     = Message::with('sender:id,name,id_image')
-            ->where('service_match_id', $match_id)
+        // تحديد الطرفين في المحادثة الحالية
+        $userA = $currentMatch->customer_id;
+        $userB = $currentMatch->volunteer_id;
+
+        // 1. جلب كل الـ IDs لعمليات الربط (Matches) اللي تمت بين الشخصين دول "في العموم"
+        $allMatchIds = ServiceMatch::where(function ($q) use ($userA, $userB) {
+            $q->where('customer_id', $userA)->where('volunteer_id', $userB);
+        })
+            ->orWhere(function ($q) use ($userA, $userB) {
+                $q->where('customer_id', $userB)->where('volunteer_id', $userA);
+            })
+            ->pluck('id');
+
+        // 2. جلب كل الرسائل المرتبطة بكل الـ Matches دي
+        $messages = Message::with('sender:id,name,id_image')
+            ->whereIn('service_match_id', $allMatchIds) // استخدام whereIn بدل where
             ->orderBy('created_at', 'asc')
             ->get();
 
-        $messageCount = $messages->count();
+        // --- حساب الرسائل المتبقية (يظل مرتبطاً بالـ Match الحالي فقط) ---
+        $messageCountInCurrentMatch = Message::where('service_match_id', $match_id)->count();
 
-        // ✅ حالة واحدة بس — مش متكررة
-        if ($match->status === 'accepted') {
+        if ($currentMatch->status === 'accepted') {
             $remaining = null;
-        } elseif ($match->status === 'completed') {
-            $remaining = max(0, self::POST_COMPLETION_LIMIT - $match->post_completion_messages);
-        } elseif ($match->status === 'inquiry') {
-            $remaining = max(0, self::INQUIRY_LIMIT - $match->inquiry_messages);
+        } elseif ($currentMatch->status === 'completed') {
+            $remaining = max(0, self::POST_COMPLETION_LIMIT - $currentMatch->post_completion_messages);
+        } elseif ($currentMatch->status === 'inquiry') {
+            $remaining = max(0, self::INQUIRY_LIMIT - $currentMatch->inquiry_messages);
         } else {
-            // pending
-            $remaining = max(0, self::MESSAGE_LIMIT - $messageCount);
+            $remaining = max(0, self::MESSAGE_LIMIT - $messageCountInCurrentMatch);
         }
 
         return response()->json([
-            'messages'          => $messages,
-            'is_accepted'       => $match->status === 'accepted',
+            'messages'           => $messages,
+            'is_accepted'        => $currentMatch->status === 'accepted',
             'remaining_messages' => $remaining,
-            'match_status'      => $match->status,
+            'match_status'       => $currentMatch->status,
         ]);
     }
 
-    // ─── POST send message ───
+    //
     public function sendMessage(Request $request, $match_id)
     {
         $user  = $request->user();
         $match = ServiceMatch::findOrFail($match_id);
 
-        $this->authorizeMatch($match, $user); // ✅ أول حاجة
+        $this->authorizeMatch($match, $user);
 
         $request->validate(['message' => 'required|string|max:1000']);
 
-        // ✅ حالة واحدة بس — مش متكررة
+        //
         if ($match->status === 'accepted') {
-            // unlimited — مفيش حاجة
-
         } elseif ($match->status === 'completed') {
             if ($match->post_completion_messages >= self::POST_COMPLETION_LIMIT) {
                 return response()->json(['message' => 'Post-completion limit reached.', 'limit_reached' => true], 403);
             }
             $match->increment('post_completion_messages');
-
         } elseif ($match->status === 'inquiry') {
             if ($match->inquiry_messages >= self::INQUIRY_LIMIT) {
                 return response()->json(['message' => 'Inquiry limit reached.', 'limit_reached' => true], 403);
             }
             $match->increment('inquiry_messages');
-
         } else {
-            // pending
+
             $count = Message::where('service_match_id', $match_id)->count();
             if ($count >= self::MESSAGE_LIMIT) {
                 return response()->json(['message' => 'Message limit reached.', 'limit_reached' => true], 403);
@@ -100,7 +109,7 @@ class ChatController extends Controller
         return response()->json(['message' => $msg], 201);
     }
 
-    // ─── PUT mark as done (volunteer only) ───
+    //
     public function markDone(Request $request, $match_id)
     {
         $user  = $request->user();
@@ -122,12 +131,12 @@ class ChatController extends Controller
         return response()->json(['message' => 'Marked as done successfully']);
     }
 
-    // ─── POST start inquiry chat from profile ───
+
     public function startInquiry(Request $request, $volunteer_id)
     {
         $user = $request->user();
 
-        // لو عنده match موجود مع الـ volunteer، افتحه
+
         $existing = ServiceMatch::where('customer_id', $user->id)
             ->where('volunteer_id', $volunteer_id)
             ->whereIn('status', ['inquiry', 'pending', 'accepted', 'completed'])

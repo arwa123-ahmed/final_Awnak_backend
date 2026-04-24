@@ -30,10 +30,15 @@ class UserManagementController extends Controller
     public function suspend($id)
     {
         $user = User::findOrFail($id);
-        $user->is_suspended = true;
+
+        // تبديل الحالة: لو 1 يخليها 0 ولو 0 يخليها 1
+        $user->is_suspended = !$user->is_suspended;
         $user->save();
 
-        return response()->json(['message' => 'User suspended']);
+        return response()->json([
+            'message' => $user->is_suspended ? 'User suspended' : 'User unsuspended',
+            'is_suspended' => $user->is_suspended
+        ]);
     }
 
     // unsuspend user
