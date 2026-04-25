@@ -1,280 +1,46 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
-use Illuminate\Http\Request;
-use App\Models\Service;
-use App\Models\ServiceMatch;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class ServiceMatchController extends Controller
+class ServiceMatch extends Model
 {
-    // هون بنعمل الاوردر يا المتطوع بيتطوع لخدمه يا الكاستمر بيطلب خدمه
-    public function store(Request $request, $service_id)
+    protected $fillable = [
+        'volunteer_id',
+        'customer_id',
+        'service_id',
+        'status',
+        'delay_minutes',
+        'delay_reason',
+        'delay_status',
+        'inquiry_messages',
+        'status',
+    ];
+
+    public function volunteer()
     {
-        $user = $request->user();
-        $service = Service::findOrFail($service_id);
-        if ($service->user_id == $user->id) {
-            return response()->json([
-                'message' => 'You cannot request your own service'
-            ], 403);
-        }
-        if ($service->type === 'offer') {
-            if ($user->role !== 'customer') {
-                return response()->json(['message' => 'Only customers can request this service'], 403);
-            }
-            $customer_id = $user->id;
-            $volunteer_id = $service->user_id;
-        } else {
-            if ($user->role !== 'volunteer') {
-                return response()->json(['message' => 'Only volunteers can apply to this service'], 403);
-            }
-            $volunteer_id = $user->id;
-            $customer_id = $service->user_id;
-        }
-        $exists = ServiceMatch::where('service_id', $service->id)
-            ->where('customer_id', $customer_id)
-            ->where('volunteer_id', $volunteer_id)
-            ->where('status', 'pending')
-            ->first();
-        if ($exists) {
-            return response()->json([
-                'message' => 'You already requested this service'
-            ], 409);
-        }
-        $match = ServiceMatch::create([
-            'service_id'   => $service->id,
-            'customer_id'  => $customer_id,
-            'volunteer_id' => $volunteer_id,
-            'status'       => 'pending',
-        ]);
-        return response()->json([
-            'message' => 'Service request sent successfully',
-            'request' => $match
-        ], 201);
+        return $this->belongsTo(User::class, 'volunteer_id');
     }
 
-    //  يعني offer عرض الطلبات الي اجت من الكاستمر للفولنتير
-public function volunteerRequests(Request $request)
-{
-    $user = $request->user();
-    $serviceIds = Service::where('type', 'offer')->pluck('id');
-    if ($user->role !== 'volunteer') {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-   // $requests = ServiceMatch::where('volunteer_id', $user->id)
-    $requests = ServiceMatch::with(['service', 'customer'])->where('status', 'pending')->whereIn('service_id', $serviceIds)->get();
-    return response()->json([
-        'requests' => $requests
-    ]);
-}
-
-//  يعني request عرض الطلبات الي اجت من الفولنتير للكاستمر
-public function customerRequests(Request $request)
-{
-    $user = $request->user();
-    $serviceIds = Service::where('type', 'request')->pluck('id');
-    if ($user->role !== 'customer') {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-    //$requests = ServiceMatch::where('customer_id', $user->id)
-     $requests = ServiceMatch::with(['service', 'volunteer'])
-    ->where('status', 'pending')
-        ->whereIn('service_id', $serviceIds)
-        ->get();
-    return response()->json([
-        'requests' => $requests
-    ]);
-}
-
-//notification 
-public function myMatchRequests(Request $request)
-{
-    $user = $request->user(); 
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized'], 401);
-    }
-    $matches = ServiceMatch::with(['service', 'customer', 'volunteer'])->where('volunteer_id', $user->id)->orWhere('customer_id', $user->id)->orderBy('updated_at', 'desc')->get();
-    return response()->json(['matches' => $matches]);
-}
-
-
-    // بعد ماتخلص الخدمه يحول الوقت
-    public function moneyTransfer($serviceMatchId)
-{
-    $match = ServiceMatch::findOrFail($serviceMatchId);
-    $service = Service :: findOrFail($match->service_id);
-    $service->update([
-        'status' => 'completed'
-    ]);
-    $customer = $match->customer;   
-    $volunteer = $match->volunteer; 
-    $amount = $match->service->timesalary;
-
-    $customer->balance -= $amount;
-    $customer->save();
-    $volunteer->earnedBalance += $amount;
-    $volunteer->save();
-    return response()->json([
-        'message' => 'Payment transferred successfully',
-        'customer_balance' => $customer->balance,
-        'volunteer_balance' => $volunteer->earnedBalance,
-        'service_status' => $service->status
-    ]);
-}
-
-
-
-
-
-
-    // Section Category Delivary !!!!!!!!
-
-    //قرار المتطوع يقبل او يرفض الطلب
-    public function updateStatusByVolunteer(Request $request, $id)
+    public function customer()
     {
-        $user = $request->user();
-        if ($user->role !== 'volunteer') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $match = ServiceMatch::where('id', $id)
-            ->where('volunteer_id', $user->id)
-            ->where('status', 'pending')
-            ->first();
-        if (!$match) {
-            return response()->json(['message' => 'Request not found or already decided'], 404);
-        }
-        $request->validate([
-            'status' => 'required|in:accepted,rejected',
-        ]);
-        $match->status = $request->status;
-        $match->save();
-        $service = Service::find($match->service_id);
-        if ($match->status === 'accepted') {
-            $this->startTimer($match);
-            $service->status = 'inprogress';
-        } elseif ($match->status === 'rejected') {
-            //التايمر هون حيوقف
-            $service->end_time = null;
-            $service->status = 'pending';
-        }
-        $service->save();
-        return response()->json([
-            'message' => 'Request has been ' . $request->status,
-            'match'   => $match
-        ]);
+        return $this->belongsTo(User::class, 'customer_id');
     }
-    //تشغيل العداد
-    private function startTimer($match)
-    {
-        $service = Service::where('id', $match->service_id)->first();
-        $service->end_time = now()->addMinutes($service->timeSalary);
-        $service->save();
-    }
-    //بحالة وصل المتطوع قبل نهايه الوقت
-    public function orderFinished(Request $request, $id)
-    {
-        $user = $request->user();
-        if ($user->role !== 'volunteer') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $match = ServiceMatch::where('id', $id)
-            ->where('volunteer_id', $user->id)
-            ->where('status', 'accepted')
-            ->first();
-        if (!$match) {
-            return response()->json(['message' => 'Request not found or already decided'], 404);
-        }
-        $request->validate([
-            'status' => 'required|in:completed',
-        ]);
-        $match->update([
-            'status' => $request->status
-        ]);
-        $service = Service::where('id', $match->service_id)->first();
-        $service->end_time = now();
-        $service->status = 'finished';
-        $service->save();
-        return response()->json([
-            'message' => 'Request has been ' . $request->status,
-            'match' => $match
-        ]);
-    }
-    //بحالة خلص الوقت والمتطوع بدو يتاخر
-    public function volunteerDelay(Request $request, $id)
-    {
-        $request->validate([
-            'delay_minutes' => 'required|integer|min:1',
-            'delay_reason'  => 'required|string|max:255',
-        ]);
-        $match = ServiceMatch::where('id', $id)
-            ->where('volunteer_id', $request->user()->id)
-            ->where('status', 'timeFinished')
-            ->firstOrFail();
-        $match->delay_minutes = $request->delay_minutes;
-        $match->delay_reason  = $request->delay_reason;
-        $match->status        = 'delayed';
-        $match->save();
-        $service = Service::where('id', $match->service_id)->first();
-        $service->status = 'inprogress';
-        $service->end_time = now()->addMinutes($match->delay_minutes);
-        $service->save();
-        return response()->json([
-            'message' => 'Delay applied successfully',
-            'new_end_time' => $service->end_time,
-            'match' => $match
-        ]);
-    }
-    //قرار الكاستمر يقبل او يرفض الطلب
-    public function updateStatusByCustomer(Request $request, $id)
-    {
-        $user = $request->user();
-        if ($user->role !== 'customer') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $match = ServiceMatch::where('id', $id)
-            ->where('customer_id', $user->id)
-            ->where('status', 'pending')
-            ->first();
-        if (!$match) {
-            return response()->json(['message' => 'Request not found or already decided'], 404);
-        }
-        $request->validate([
-            'status' => 'required|in:accepted,rejected',
-        ]);
-        $match->status = $request->status;
-        $match->save();
-        $service = Service::find($match->service_id);
-        if ($match->status === 'accepted') {
-            $this->startTimer($match);
-            $service->status = 'inprogress';
-        } elseif ($match->status === 'rejected') {
-            //التايمر هون حيوقف
-            $service->end_time = null;
-            $service->status = 'pending';
-        }
-        $service->save();
-        return response()->json([
-            'message' => 'Request has been ' . $request->status,
-            'match'   => $match
-        ]);
-    }
-    public function myMatches(Request $request)
-    {
-        $user = $request->user();
 
-        $matches = ServiceMatch::with(['service', 'customer', 'volunteer'])
-            ->where(function ($q) use ($user) {
-                $q->where('customer_id', $user->id)
-                    ->orWhere('volunteer_id', $user->id);
-            })
-            ->latest()
-            ->get();
-
-        return response()->json([
-            'matches' => $matches
-        ]);
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
     }
-    // Done...... Section Category Delivary !!!!!!!!
+    // app/Models/ServiceMatch.php
 
+    public function messages()
+    {
+        return $this->hasMany(Message::class, 'service_match_id');
+    }
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
 }
