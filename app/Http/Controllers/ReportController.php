@@ -1,25 +1,48 @@
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
+use Illuminate\Http\Request;
+use App\Models\ServiceMatch;
+use App\Models\Report;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Report extends Model
+class ReportController extends Controller
 {
-    // أضف الأعمدة الموجودة في الصورة
-    protected $fillable = ['reporter_id', 'reported_id', 'servicematch_id', 'reason', 'status'];
+    // ✅ أضيفي الـ index function
+    public function index()
+{
+    $reports = Report::with(['reporter', 'reportedUser'])
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-    // الشخص اللي عمل البلاغ (ID: 1 في الصورة)
-    public function serviceMatch()
+    return response()->json($reports);
+}
+    public function store(Request $request, $servicematch_id)
     {
-        return $this->belongsTo(ServiceMatch::class, 'servicematch_id');
-    }
-    public function reporter()
-    {
-        return $this->belongsTo(User::class, 'reporter_id');
-    }
-    public function reportedUser()
-    {
-        return $this->belongsTo(User::class, 'reported_id');
+        $service_match = ServiceMatch::findOrFail($servicematch_id);
+        $user = $request->user();
+
+        if ($service_match->customer_id !== $user->id && $service_match->volunteer_id !== $user->id) {
+            return response()->json(['message' => 'You are not part of this service'], 403);
+        }
+
+        if (!in_array($service_match->status, ['completed', 'Ratinged', 'rated'])) {
+            return response()->json(['message' => 'Service not completed yet'], 403);
+        }
+
+        if ($user->id == $service_match->customer_id) {
+            $reportedId = $service_match->volunteer_id;
+        } else {
+            $reportedId = $service_match->customer_id;
+        }
+
+        Report::create([
+            'servicematch_id' => $service_match->id,
+            'reporter_id'     => $user->id,
+            'reported_id'     => $reportedId,
+            'reason'          => $request->reason,
+            'status'          => 'pending',
+        ]);
+
+        return response()->json(['message' => 'Report submitted'], 201);
     }
 }
