@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChatbotResponse extends Model
 {
-    protected $fillable = [
+   protected $fillable = [
+        'user_id',
         'question',
-        'keywords',
-        'answer'
+        'answer',
     ];
     use HasFactory;
 }

@@ -135,8 +135,8 @@
     Route::get('/categories', [CategoryController::class, 'index']);
 
     // chatbot
-    Route::post('/chatbot', [ChatbotController::class, 'reply']);
-
+    Route::post('/chatbot', [ChatbotController::class, 'reply'])->middleware('auth:sanctum');
+    Route::get('/chatbot/history', [ChatbotController::class, 'history'])->middleware('auth:sanctum');
 
     use App\Http\Controllers\Admin\UserManagementController;
 

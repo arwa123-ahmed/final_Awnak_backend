@@ -3,157 +3,121 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Message;
-use App\Models\ServiceMatch;
 
-class ChatController extends Controller
+use App\Models\ChatbotResponse;
+use Illuminate\Support\Facades\Http;
+
+class ChatbotController extends Controller
 {
-    const MESSAGE_LIMIT = 30;
-    const POST_COMPLETION_LIMIT = 30;
-    const INQUIRY_LIMIT = 30;
+   public function reply(Request $request)
+{
+    $request->validate([
+        'message' => 'required|string'
+    ]);
 
-    // ─── Helper: تأكد إن المستخدم طرف في الـ match ───
-    private function authorizeMatch(ServiceMatch $match, $user)
-    {
-        if ($match->volunteer_id !== $user->id && $match->customer_id !== $user->id) {
-            abort(response()->json(['message' => 'Unauthorized'], 403));
-        }
-    }
-
-    //
-    public function getMessages(Request $request, $match_id)
-    {
-        $user  = $request->user();
-        $currentMatch = ServiceMatch::findOrFail($match_id);
-
-        $this->authorizeMatch($currentMatch, $user);
-
-        // تحديد الطرفين في المحادثة الحالية
-        $userA = $currentMatch->customer_id;
-        $userB = $currentMatch->volunteer_id;
-
-        // 1. جلب كل الـ IDs لعمليات الربط (Matches) اللي تمت بين الشخصين دول "في العموم"
-        $allMatchIds = ServiceMatch::where(function ($q) use ($userA, $userB) {
-            $q->where('customer_id', $userA)->where('volunteer_id', $userB);
-        })
-            ->orWhere(function ($q) use ($userA, $userB) {
-                $q->where('customer_id', $userB)->where('volunteer_id', $userA);
-            })
-            ->pluck('id');
-
-        // 2. جلب كل الرسائل المرتبطة بكل الـ Matches دي
-        $messages = Message::with('sender:id,name,id_image')
-            ->whereIn('service_match_id', $allMatchIds) // استخدام whereIn بدل where
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // --- حساب الرسائل المتبقية (يظل مرتبطاً بالـ Match الحالي فقط) ---
-        $messageCountInCurrentMatch = Message::where('service_match_id', $match_id)->count();
-
-        if ($currentMatch->status === 'accepted') {
-            $remaining = null;
-        } elseif ($currentMatch->status === 'completed') {
-            $remaining = max(0, self::POST_COMPLETION_LIMIT - $currentMatch->post_completion_messages);
-        } elseif ($currentMatch->status === 'inquiry') {
-            $remaining = max(0, self::INQUIRY_LIMIT - $currentMatch->inquiry_messages);
-        } else {
-            $remaining = max(0, self::MESSAGE_LIMIT - $messageCountInCurrentMatch);
-        }
-
-        return response()->json([
-            'messages'           => $messages,
-            'is_accepted'        => $currentMatch->status === 'accepted',
-            'remaining_messages' => $remaining,
-            'match_status'       => $currentMatch->status,
-        ]);
-    }
-
-    //
-    public function sendMessage(Request $request, $match_id)
-    {
-        $user  = $request->user();
-        $match = ServiceMatch::findOrFail($match_id);
-
-        $this->authorizeMatch($match, $user);
-
-        $request->validate(['message' => 'required|string|max:1000']);
-
-        //
-        if ($match->status === 'accepted') {
-        } elseif ($match->status === 'completed') {
-            if ($match->post_completion_messages >= self::POST_COMPLETION_LIMIT) {
-                return response()->json(['message' => 'Post-completion limit reached.', 'limit_reached' => true], 403);
-            }
-            $match->increment('post_completion_messages');
-        } elseif ($match->status === 'inquiry') {
-            if ($match->inquiry_messages >= self::INQUIRY_LIMIT) {
-                return response()->json(['message' => 'Inquiry limit reached.', 'limit_reached' => true], 403);
-            }
-            $match->increment('inquiry_messages');
-        } else {
-
-            $count = Message::where('service_match_id', $match_id)->count();
-            if ($count >= self::MESSAGE_LIMIT) {
-                return response()->json(['message' => 'Message limit reached.', 'limit_reached' => true], 403);
-            }
-        }
-
-        $msg = Message::create([
-            'service_match_id' => $match_id,
-            'sender_id'        => $user->id,
-            'message'          => $request->message,
-        ]);
-
-        $msg->load('sender:id,name,id_image');
-
-        return response()->json(['message' => $msg], 201);
-    }
-
-    //
-    public function markDone(Request $request, $match_id)
-    {
-        $user  = $request->user();
-        $match = ServiceMatch::findOrFail($match_id);
-
-        if ($match->volunteer_id !== $user->id) {
-            return response()->json(['message' => 'Only volunteer can mark as done'], 403);
-        }
-
-        if ($match->status !== 'accepted') {
-            return response()->json(['message' => 'Match is not accepted yet'], 403);
-        }
-
-        $match->update([
-            'status'                   => 'completed',
-            'post_completion_messages' => 0,
-        ]);
-
-        return response()->json(['message' => 'Marked as done successfully']);
-    }
-
-
-    public function startInquiry(Request $request, $volunteer_id)
-    {
+    try {
         $user = $request->user();
 
+        // نجيب تاريخ المحادثة تبع اليوزر
+        $history = ChatbotResponse::where('user_id', $user->id)
+                          ->latest()
+                          ->take(10)
+                          ->get()
+                          ->reverse();
 
-        $existing = ServiceMatch::where('customer_id', $user->id)
-            ->where('volunteer_id', $volunteer_id)
-            ->whereIn('status', ['inquiry', 'pending', 'accepted', 'completed'])
-            ->latest()
-            ->first();
+        // نبني المحادثة للـ AI
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => 'أنت مساعد ذكي لموقع بنك الوقت، منصة لتبادل الخدمات بين الأشخاص بالوقت بدل المال.
+                ## لماذا بنك الوقت؟
+                - كثير من الناس عندهم وقت ومهارات لكن ما في نظام يستغلوها
+                - كثير من الناس محتاجين مساعدة لكن ما عندهم مال
+                - الحل: تبادل الخدمات بالوقت بشكل عادل وشفاف
+               ## خطوات التسجيل:
+                1. سجل حساب جديد
+                2. ارفع صورة الهوية (رقم قومي أو باسبور)
+                3. انتظر موافقة الأدمن لتفعيل حسابك
+                4. بعد التفعيل تقدر تستخدم الموقع كامل
+              ## الدور:
+                - كل مستخدم يختار دوره: Customer أو Volunteer وقابل للتغيير
+                - Customer: ينزل خدمة محتاجها وتظهر للمتطوعين
+                - Volunteer: يشوف الخدمات المطلوبة ويرد عليها
+              ## الرصيد:
+                - رصيدك يبدأ من صفر
+                - لطلب خدمة لازم تشحن رصيد أولاً بالمال
+                - الوقت المكتسب من تقديم الخدمات لا يمكن استخدامه لطلب خدمات جديدة
+                - الوقت المكتسب منفصل عن الوقت المشحون
+                - لشحن الرصيد أرسل صورة الشحن على الصفحة الموجودة داخل الحساب الشخصي
+              ## الخدمات:
+                - أونلاين وأوفلاين
+                - لإضافة خدمة: اضغط زر الـ + أسفل الشاشة فقط، لا تذكر خطوات أخرى
+              قواعد الرد:
+               - اجعل ردودك قصيرة ومختصرة بـ جملة واحدة كحد أقصى
+               - استخدم نقاط مختصرة بدل الفقرات الطويلة
+               - لا تذكر قائمة الخدمات المتاحة بالرد، المستخدم يبحث عن الخدمة اللي يحتاجها بنفسه من الموقع
+               - لا تكرر أي معلومة أكثر من مرة واحدة بنفس الرد
+               - الرد الكامل لا يتجاوز 3 نقاط فقط
+                - إذا سألك المستخدم عن أي شي خارج نطاق موقع بنك الوقت، رد فقط بهاي الجملة: "عذراً، أنا مساعد بنك الوقت ولا أستطيع الإجابة على هذا السؤال 😊"'
+            ]
+        ];
 
-        if ($existing) {
-            return response()->json(['match_id' => $existing->id]);
+        // نضيف تاريخ المحادثة
+        foreach ($history as $msg) {
+            $messages[] = ['role' => 'user', 'content' => $msg->question];
+            $messages[] = ['role' => 'assistant', 'content' => $msg->answer];
         }
 
-        $match = ServiceMatch::create([
-            'customer_id'      => $user->id,
-            'volunteer_id'     => $volunteer_id,
-            'status'           => 'inquiry',
-            'inquiry_messages' => 0,
+        // نضيف رسالة اليوزر الحالية
+        $messages[] = ['role' => 'user', 'content' => $request->message];
+
+        $response = Http::withToken(config('services.groq.key'))
+            ->post('https://api.groq.com/openai/v1/chat/completions', [
+                'model' => 'llama-3.1-8b-instant',
+                'messages' => $messages,
+                'temperature' => 0.7,
+            ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'reply' => 'Groq API error',
+                'debug' => $response->body()
+            ], 500);
+        }
+
+        $reply = $response->json('choices.0.message.content');
+
+        // نحفظ المحادثة بالداتابيز
+        ChatbotResponse::create([
+            'user_id'  => $user->id,
+            'question' => $request->message,
+            'answer'   => $reply,
         ]);
 
-        return response()->json(['match_id' => $match->id]);
+        return response()->json([
+            'reply' => $reply
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'reply' => 'Server error',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
+
+public function history(Request $request)
+{
+    $user = $request->user();
+    
+    $history = ChatbotResponse::where('user_id', $user->id)
+                              ->latest()
+                              ->take(10)
+                              ->get()
+                              ->reverse()
+                              ->values();
+
+    return response()->json(['history' => $history]);
+}
 }
