@@ -186,6 +186,12 @@
         Route::get('/recharges', [RechargeBalanceController::class, 'index']);
         Route::post('/recharges/{id}/approve', [RechargeBalanceController::class, 'approve']);
         Route::post('/recharges/{id}/reject', [RechargeBalanceController::class, 'reject']);
+
+        Route::get('/stats',          [ReportsController::class, 'stats']);
+    Route::get('/monthly-users',  [ReportsController::class, 'monthlyUsers']);
+    Route::get('/top-services',   [ReportsController::class, 'topServices']);
+    Route::get('/coins',          [ReportsController::class, 'coinsMovement']);
+    Route::get('/issues',         [ReportsController::class, 'issuesReport']);
     });
 
 
