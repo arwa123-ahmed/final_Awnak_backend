@@ -25,11 +25,11 @@ class ReportsController extends Controller
         $newServicesThisMonth = Service::whereMonth('created_at', $now->month)
                                         ->whereYear('created_at', $now->year)->count();
 
-        $totalCoins           = ServiceMatch::where('status', 'completed')->sum('deducted_amount');
+        $totalCoins           = ServiceMatch::where('status', 'completed')->count();
         $coinsThisMonth       = ServiceMatch::where('status', 'completed')
                                              ->whereMonth('updated_at', $now->month)
                                              ->whereYear('updated_at', $now->year)
-                                            ->sum('deducted_amount');
+                                            ->count();
 
         $avgRating            = Rating:: avg('stars') ?? 0;
 
@@ -122,13 +122,21 @@ class ReportsController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
 
+            // $earned = ServiceMatch::where('status', 'completed')
+            //                        ->whereMonth('updated_at', $month->month)
+            //                        ->whereYear('updated_at', $month->year)
+            //                        ->sum('deducted_amount');
             $earned = ServiceMatch::where('status', 'completed')
-                                   ->whereMonth('updated_at', $month->month)
-                                   ->whereYear('updated_at', $month->year)
-                                   ->sum('deducted_amount');
+                       ->whereMonth('updated_at', $month->month)
+                       ->whereYear('updated_at', $month->year)
+                       ->count();
+$spent = ServiceMatch::where('status', 'in_progress')
+                      ->whereMonth('updated_at', $month->month)
+                      ->whereYear('updated_at', $month->year)
+                      ->count();
 
         
-            $spent = $earned;
+            // $spent = $earned;
 
             $data[] = [
                 'month'  => $month->format('M'),

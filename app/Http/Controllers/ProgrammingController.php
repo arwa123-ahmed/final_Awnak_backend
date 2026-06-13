@@ -254,6 +254,7 @@ public function orderFinished(Request $request, $id)
         // ✅ إشعارات
         $volunteer->notify(new BalanceEarned((int)$amount, $service->name));
         $customer->notify(new BalanceDeducted((int)$amount, $service->name));
+        Http::post('http://127.0.0.1:5000/retrain');
 
         // ✅ تحديث الـ status
         $match->status = 'completed';

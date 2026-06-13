@@ -93,11 +93,32 @@ class ServiceController extends Controller
                               ->where('category_id', $id)
                               ->orderByRaw("status = 'pending' DESC")
                               ->get();
+
+                $aiService = new AIRecommendationService();
+                $recommendedIds = $aiService->getRecommendations(
+                $user->id,
+                'customer',
+                $id
+    );
+
+    if ($recommendedIds && count($recommendedIds) > 0) {
+        $recommendedIds = array_values($recommendedIds);
+        $offers = $offers->sortBy(function($offer) use ($recommendedIds) {
+            $index = array_search($offer->id, $recommendedIds);
+            return $index === false ? 999 : $index;
+        })->values();
+    }
+
+    return response()->json([
+        'message' => 'Offers retrieved successfully',
+        'offers' => $offers
+    ]);              
+
          
-             return response()->json([
-                 'message' => 'Requests retrieved successfully',
-                 'offers' => $offers
-             ]);
+            //  return response()->json([
+            //      'message' => 'Requests retrieved successfully',
+            //      'offers' => $offers
+            //  ]);
          }
 
     //يعرض كل الريكوست بكتايجوري معينه ولسا ماتاخدت
@@ -109,6 +130,21 @@ class ServiceController extends Controller
                            ->where('category_id', $id)
                            ->orderByRaw("status = 'pending' DESC")
                            ->get();
+                           $aiService = new AIRecommendationService();
+    $recommendedIds = $aiService->getRecommendations(
+        $user->id,
+        'volunteer',
+        $id
+    );
+
+
+    if ($recommendedIds && count($recommendedIds) > 0) {
+        $recommendedIds = array_values($recommendedIds);
+        $requests = $requests->sortBy(function($request) use ($recommendedIds) {
+            $index = array_search($request->id, $recommendedIds);
+            return $index === false ? 999 : $index;
+        })->values();
+    }
         return response()->json([
             'message' => 'Requests retrieved successfully',
             'Requests' => $requests
