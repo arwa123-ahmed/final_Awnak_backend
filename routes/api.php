@@ -17,9 +17,10 @@
     use App\Http\Controllers\ChatController;
     use App\Http\Controllers\ContactController;
     use App\Http\Controllers\ProgrammingController;
+    use App\Http\Controllers\ReportsController;
     use App\Http\Controllers\NotificationController;
     use Illuminate\Support\Facades\Mail;
-    use App\Http\Controllers\ReportsController;
+    
     /*
     |--------------------------------------------------------------------------
     | API Routes
