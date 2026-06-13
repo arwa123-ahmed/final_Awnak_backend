@@ -19,6 +19,7 @@
     use App\Http\Controllers\ProgrammingController;
     use App\Http\Controllers\NotificationController;
     use Illuminate\Support\Facades\Mail;
+    use App\Http\Controllers\ReportsController;
     /*
     |--------------------------------------------------------------------------
     | API Routes
@@ -187,7 +188,7 @@
         Route::post('/recharges/{id}/approve', [RechargeBalanceController::class, 'approve']);
         Route::post('/recharges/{id}/reject', [RechargeBalanceController::class, 'reject']);
 
-        Route::get('/stats',          [ReportsController::class, 'stats']);
+    Route::get('/stats',          [ReportsController::class, 'stats']);
     Route::get('/monthly-users',  [ReportsController::class, 'monthlyUsers']);
     Route::get('/top-services',   [ReportsController::class, 'topServices']);
     Route::get('/coins',          [ReportsController::class, 'coinsMovement']);
