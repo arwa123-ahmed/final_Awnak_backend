@@ -85,12 +85,12 @@ try {
     
     if ($moderation->successful() && $moderation->json('label') === 'TOXIC') {
         \App\Models\Report::create([
-            'reporter_id'      => $user->id,
-            'reported_id'      => $match->volunteer_id === $user->id ? $match->customer_id : $match->volunteer_id,
-            'service_match_id' => $match_id,
-            'reason'           => 'Toxic message: ' . $request->message,
-            'status'           => 'pending',
-        ]);
+    'reporter_id'   => $user->id,
+    'reported_id'   => $match->volunteer_id === $user->id ? $match->customer_id : $match->volunteer_id,
+    'servicematch_id' => $match_id,
+    'reason'        => 'Toxic message: ' . $request->message,
+    'status'        => 'pending',
+]);
         return response()->json([
             'message'  => 'رسالتك تحتوي على محتوى غير لائق. يرجى إعادة الصياغة. 😊',
             'is_toxic' => true
