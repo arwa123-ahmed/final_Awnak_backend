@@ -77,26 +77,28 @@ class ChatController extends Controller
     $request->validate(['message' => 'required|string|max:1000']);
 
     // ✅ فحص الرسالة
-    try {
-        $moderation = \Illuminate\Support\Facades\Http::post('http://127.0.0.1:5001/moderate', [
-            'text' => $request->message
+   // ✅ فحص الرسالة
+try {
+    $moderation = \Illuminate\Support\Facades\Http::post('http://127.0.0.1:5001/moderate', [
+        'text' => $request->message
+    ]);
+    
+    if ($moderation->successful() && $moderation->json('label') === 'TOXIC') {
+        \App\Models\Report::create([
+            'reporter_id'      => $user->id,
+            'reported_id'      => $match->volunteer_id === $user->id ? $match->customer_id : $match->volunteer_id,
+            'service_match_id' => $match_id,
+            'reason'           => 'Toxic message: ' . $request->message,
+            'status'           => 'pending',
         ]);
-        if ($moderation->successful() && $probability >= 0.3) {
-            // ريبورت تلقائي
-            \App\Models\Report::create([
-                'reporter_id'      => $user->id,
-                'service_match_id' => $match_id,
-                'reason'           => 'Toxic message: ' . $request->message,
-                'status'           => 'pending',
-            ]);
-            return response()->json([
-                'message'  => 'رسالتك تحتوي على محتوى غير لائق. يرجى إعادة الصياغة. 😊',
-                'is_toxic' => true
-            ], 422);
-        }
-    } catch (\Exception $e) {
-        \Log::error('Moderation API failed: ' . $e->getMessage());
+        return response()->json([
+            'message'  => 'رسالتك تحتوي على محتوى غير لائق. يرجى إعادة الصياغة. 😊',
+            'is_toxic' => true
+        ], 422);
     }
+} catch (\Exception $e) {
+    \Log::error('Moderation API failed: ' . $e->getMessage());
+}
 
     // باقي الكود
     if ($match->status === 'accepted') {
