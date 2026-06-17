@@ -229,36 +229,66 @@ public function update(Request $request)
     //     return response()->json(["msg" => "mail confirmed to reset password"]);
     // }
 
+    // public function forgetPassword(Request $request)
+    // {
+    //     // dd(config('app.frontend_url'));
+    //     $request->validate([
+    //         'email' => 'required|email'
+    //     ]);
+    //     //check if email is exist ot not
+    //     $user = User::where('email', $request->email)->first();
+    //     if (!$user) {
+    //         return response()->json(["msg" => "the email is not exist"], 404);
+    //     }
+    //     //create token
+    //     $token = Str::random(64);
+    //     //store token
+    //     DB::table('password_reset_tokens')->updateOrInsert(
+    //         ['email' => $request->email],
+    //         [
+    //             'token' => Hash::make($token),
+    //             'created_at' => now()
+    //         ]
+    //     );
+    //     $resetLink = config('app.frontend_url')
+    //         . '/reset-password?token=' . $token
+    //         . '&email=' . urlencode($request->email);
+    //     //make email
+    //     Mail::to($request->email)->send(new EmailCheck($resetLink));
+    //     return response()->json([
+    //         'message' => 'Reset link sent to your email'
+    //     ]);
+    // }
     public function forgetPassword(Request $request)
-    {
-        // dd(config('app.frontend_url'));
-        $request->validate([
-            'email' => 'required|email'
-        ]);
-        //check if email is exist ot not
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            return response()->json(["msg" => "the email is not exist"], 404);
-        }
-        //create token
-        $token = Str::random(64);
-        //store token
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $request->email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now()
-            ]
-        );
-        $resetLink = config('app.frontend_url')
-            . '/reset-password?token=' . $token
-            . '&email=' . urlencode($request->email);
-        //make email
-        Mail::to($request->email)->send(new EmailCheck($resetLink));
-        return response()->json([
-            'message' => 'Reset link sent to your email'
-        ]);
+{
+    $request->validate([
+        'email' => 'required|email'
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json(["msg" => "the email is not exist"], 404);
     }
+
+    $token = Str::random(64);
+
+    DB::table('password_reset_tokens')->updateOrInsert(
+        ['email' => $request->email],
+        [
+            'token' => Hash::make($token),
+            'created_at' => now()
+        ]
+    );
+
+    // هنا يتم قراءة الرابط من الـ Config الذي قمنا بتعديله في الخطوة الأولى
+    $resetLink = config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+
+    Mail::to($request->email)->send(new EmailCheck($resetLink));
+
+    return response()->json([
+        'message' => 'Reset link sent to your email'
+    ]);
+}
 
     public function resetPassword(Request $request)
     {
